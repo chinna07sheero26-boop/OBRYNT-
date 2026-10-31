@@ -1,0 +1,6 @@
+# robots.txt for THREADLAB
+User-agent: *
+Allow: /
+
+# Direct search engine crawlers to sitemap
+Sitemap: sitemap.xml

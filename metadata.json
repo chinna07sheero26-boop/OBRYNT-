@@ -1,0 +1,7 @@
+{
+  "name": "OBRYNT — Wear Your Identity",
+  "description": "Premium fashion ecommerce storefront featuring clothing, footwear, accessories, beauty and an interactive custom design studio with seamless ordering and wishlist.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

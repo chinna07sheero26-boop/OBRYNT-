@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <!-- Homepage -->
+  <url>
+    <loc>./</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <!-- Category: Plain T-shirts -->
+  <url>
+    <loc>./#category=plain-t-shirts</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: Printed T-shirts -->
+  <url>
+    <loc>./#category=printed-t-shirts</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: Gym T-shirts -->
+  <url>
+    <loc>./#category=gym-t-shirts</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: Shirts -->
+  <url>
+    <loc>./#category=shirts</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: Jeans -->
+  <url>
+    <loc>./#category=jeans</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: Trousers -->
+  <url>
+    <loc>./#category=trousers</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: Shorts -->
+  <url>
+    <loc>./#category=shorts</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: Joggers -->
+  <url>
+    <loc>./#category=joggers</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: Hoodies & Sweatshirts -->
+  <url>
+    <loc>./#category=hoodies-sweatshirts</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Product: TL-PTS-001 -->
+  <url>
+    <loc>./#product=TL-PTS-001</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>./images/product_tshirt_minimal_1793012315796.jpg</image:loc>
+      <image:title>Heavyweight 240 GSM Boxy Plain Tee</image:title>
+      <image:caption>Heavyweight 240 GSM Boxy Plain Tee - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-PTS-002 -->
+  <url>
+    <loc>./#product=TL-PTS-002</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Essential Supima Cotton Crewneck</image:title>
+      <image:caption>Essential Supima Cotton Crewneck - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-PTS-003 -->
+  <url>
+    <loc>./#product=TL-PTS-003</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Mineral Washed Slate Plain Tee</image:title>
+      <image:caption>Mineral Washed Slate Plain Tee - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-PTS-004 -->
+  <url>
+    <loc>./#product=TL-PTS-004</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Raw Earth Terracotta Plain Tee</image:title>
+      <image:caption>Raw Earth Terracotta Plain Tee - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-PRT-001 -->
+  <url>
+    <loc>./#product=TL-PRT-001</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Architectural Grid Minimal Graphic Tee</image:title>
+      <image:caption>Architectural Grid Minimal Graphic Tee - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-PRT-002 -->
+  <url>
+    <loc>./#product=TL-PRT-002</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Monolith Abstract Typography Tee</image:title>
+      <image:caption>Monolith Abstract Typography Tee - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-PRT-003 -->
+  <url>
+    <loc>./#product=TL-PRT-003</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Atelier Botanical Back-Print Tee</image:title>
+      <image:caption>Atelier Botanical Back-Print Tee - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-GYM-001 -->
+  <url>
+    <loc>./#product=TL-GYM-001</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>/src/assets/images/product_gym_tee_1793012316718.jpg</image:loc>
+      <image:title>Aura Pro Performance Mesh Gym Tee</image:title>
+      <image:caption>Aura Pro Performance Mesh Gym Tee - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-GYM-002 -->
+  <url>
+    <loc>./#product=TL-GYM-002</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Seamless Compression Core Tee</image:title>
+      <image:caption>Seamless Compression Core Tee - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-GYM-003 -->
+  <url>
+    <loc>./#product=TL-GYM-003</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1584865288642-42078afe6942?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Dry-Tech Lightweight Training Tee</image:title>
+      <image:caption>Dry-Tech Lightweight Training Tee - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-SHT-001 -->
+  <url>
+    <loc>./#product=TL-SHT-001</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Kuro Camp-Collar Linen Overshirt</image:title>
+      <image:caption>Kuro Camp-Collar Linen Overshirt - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-SHT-002 -->
+  <url>
+    <loc>./#product=TL-SHT-002</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Heavyweight Oxford Button-Down</image:title>
+      <image:caption>Heavyweight Oxford Button-Down - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-SHT-003 -->
+  <url>
+    <loc>./#product=TL-SHT-003</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1603252109303-2751441dd157?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Tactical Utility Workshirt</image:title>
+      <image:caption>Tactical Utility Workshirt - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-JNS-001 -->
+  <url>
+    <loc>./#product=TL-JNS-001</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>/src/assets/images/product_denim_raw_1793012316312.jpg</image:loc>
+      <image:title>Heritage 14oz Selvedge Raw Denim</image:title>
+      <image:caption>Heritage 14oz Selvedge Raw Denim - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-JNS-002 -->
+  <url>
+    <loc>./#product=TL-JNS-002</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1542272604-780c96856592?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Modern Tapered Washed Jeans</image:title>
+      <image:caption>Modern Tapered Washed Jeans - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-JNS-003 -->
+  <url>
+    <loc>./#product=TL-JNS-003</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Clean Jet Black Selvedge Denim</image:title>
+      <image:caption>Clean Jet Black Selvedge Denim - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-TRS-001 -->
+  <url>
+    <loc>./#product=TL-TRS-001</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>and clean cuffed hem creating a timeless contemporary architectural silhouette.</image:loc>
+      <image:title>Pleated Wide-Leg Wool-Blend Trousers</image:title>
+      <image:caption>Pleated Wide-Leg Wool-Blend Trousers - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-TRS-002 -->
+  <url>
+    <loc>./#product=TL-TRS-002</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Tailored Stretch Commuter Chinos</image:title>
+      <image:caption>Tailored Stretch Commuter Chinos - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-SHT-010 -->
+  <url>
+    <loc>./#product=TL-SHT-010</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>and rear welt pocket.</image:loc>
+      <image:title>Everyday Drawstring Linen-Blend Shorts</image:title>
+      <image:caption>Everyday Drawstring Linen-Blend Shorts - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-SHT-011 -->
+  <url>
+    <loc>./#product=TL-SHT-011</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>and reflective back bar.</image:loc>
+      <image:title>Active 2-in-1 Running Shorts</image:title>
+      <image:caption>Active 2-in-1 Running Shorts - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-JGR-001 -->
+  <url>
+    <loc>./#product=TL-JGR-001</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Heavy French Terry Cuffed Joggers</image:title>
+      <image:caption>Heavy French Terry Cuffed Joggers - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-JGR-002 -->
+  <url>
+    <loc>./#product=TL-JGR-002</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1517445312882-bc9910d016b7?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Tech Cargo Utility Joggers</image:title>
+      <image:caption>Tech Cargo Utility Joggers - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-HOD-001 -->
+  <url>
+    <loc>./#product=TL-HOD-001</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>and seamless kangaroo pocket.</image:loc>
+      <image:title>450 GSM Boxy Heavyweight Hoodie</image:title>
+      <image:caption>450 GSM Boxy Heavyweight Hoodie - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-HOD-002 -->
+  <url>
+    <loc>./#product=TL-HOD-002</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>and ribbed side gusset panels for enhanced mobility.</image:loc>
+      <image:title>Washed Vintage Zip-Up Hoodie</image:title>
+      <image:caption>Washed Vintage Zip-Up Hoodie - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+  <!-- Product: TL-HOD-003 -->
+  <url>
+    <loc>./#product=TL-HOD-003</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&amp;auto=format&amp;fit=crop&amp;q=80</image:loc>
+      <image:title>Minimalist Raglan Crewneck Sweatshirt</image:title>
+      <image:caption>Minimalist Raglan Crewneck Sweatshirt - THREADLAB Clothing</image:caption>
+    </image:image>
+  </url>
+</urlset>

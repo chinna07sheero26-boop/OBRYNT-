@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- GitHub Pages Subpath Normalizer: ensures relative paths resolve inside repository -->
+    <script>
+      (function () {
+        try {
+          var p = window.location.pathname;
+          var host = window.location.hostname;
+          if (host.indexOf('github.io') !== -1) {
+            var parts = p.split('/').filter(Boolean);
+            if (parts.length === 1 && !p.endsWith('/')) {
+              window.location.replace(window.location.origin + p + '/' + window.location.search + window.location.hash);
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
+    
+    <!-- Primary SEO Meta Tags for Google Search -->
+    <title>OBRYNT — Wear Your Identity</title>
+    <meta name="title" content="OBRYNT — Wear Your Identity" />
+    <meta name="description" content="OBRYNT — clothing, footwear, accessories, beauty and custom-designed fashion. Wear your identity with premium apparel, footwear, beauty essentials, and bespoke custom studio." />
+    <meta name="keywords" content="OBRYNT, fashion store, custom t-shirt design, clothing brand, footwear, beauty and skincare, streetwear India, bags and accessories, wear your identity" />
+    <meta name="author" content="OBRYNT Studio Co." />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+
+    <!-- OpenGraph / Facebook Social Sharing Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="OBRYNT" />
+    <meta property="og:title" content="OBRYNT — Wear Your Identity" />
+    <meta property="og:description" content="OBRYNT — clothing, footwear, accessories, beauty and custom-designed fashion." />
+    <meta property="og:image" content="./images/threadlab_hero_banner_1793012315049.jpg" />
+
+    <!-- Twitter / X Card Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="OBRYNT — Wear Your Identity" />
+    <meta name="twitter:description" content="OBRYNT — clothing, footwear, accessories, beauty and custom-designed fashion." />
+    <meta name="twitter:image" content="./images/threadlab_hero_banner_1793012315049.jpg" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+    <!-- Schema.org Structured Data (JSON-LD) for Google Search Rich Results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ClothingStore",
+      "name": "OBRYNT",
+      "alternateName": "OBRYNT Fashion & Custom Studio",
+      "description": "Premium apparel, footwear, accessories, beauty and custom-designed fashion storefront.",
+      "currenciesAccepted": "INR",
+      "paymentAccepted": "Cash, Credit Card, UPI, NetBanking",
+      "priceRange": "₹249 - ₹2999",
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "OBRYNT Catalog",
+        "itemListElement": [
+          { "@type": "OfferCatalog", "name": "Men" },
+          { "@type": "OfferCatalog", "name": "Women" },
+          { "@type": "OfferCatalog", "name": "T-Shirts" },
+          { "@type": "OfferCatalog", "name": "Gym & Sports" },
+          { "@type": "OfferCatalog", "name": "Innerwear" },
+          { "@type": "OfferCatalog", "name": "Footwear" },
+          { "@type": "OfferCatalog", "name": "Bags & Accessories" },
+          { "@type": "OfferCatalog", "name": "Beauty & Makeup" },
+          { "@type": "OfferCatalog", "name": "Custom Design" }
+        ]
+      }
+    }
+    </script>
+  </head>
+  <body class="bg-[#f7f6f2] text-[#111111] font-sans antialiased selection:bg-[#111111] selection:text-[#d7ff3f]">
+    <!-- Initial App Shell to guarantee immediate visual render while JavaScript boots -->
+    <div id="root">
+      <div id="tl-preloader" style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f7f6f2; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; color: #111111; text-align: center; padding: 24px;">
+        <div style="font-size: 32px; font-weight: 900; letter-spacing: 0.16em; margin-bottom: 6px;">OBRYNT<span style="color: #7a8e12;">.</span></div>
+        <div style="font-size: 13px; font-weight: 700; color: #6b6b6b; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 24px;">Wear Your Identity · Fashion Without Limits</div>
+        <div style="width: 28px; height: 28px; border: 3px solid #e4e1da; border-top-color: #111111; border-radius: 50%; animation: tl-spin 0.75s linear infinite; margin-bottom: 16px;"></div>
+        <div style="font-size: 12px; color: #888;">Loading OBRYNT collection & studio...</div>
+        <style>@keyframes tl-spin { to { transform: rotate(360deg); } }</style>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

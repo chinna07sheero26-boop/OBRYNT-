@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --ink: #111111;
+    --paper: #f7f6f2;
+    --muted: #6b6b6b;
+    --line: #e4e1da;
+    --accent: #d7ff3f;
+    --brand-olive: #7a8e12;
+    --white: #ffffff;
+    --radius: 18px;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    background-color: var(--paper);
+  }
+  
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+/* OBRYNT Garment Geometry Clip Paths */
+.clip-shirt {
+  clip-path: polygon(25% 0, 42% 0, 50% 9%, 58% 0, 75% 0, 100% 22%, 82% 42%, 70% 31%, 70% 100%, 30% 100%, 30% 31%, 18% 42%, 0 22%);
+}
+
+.clip-shirt-preview {
+  clip-path: polygon(25% 0, 42% 0, 50% 10%, 58% 0, 75% 0, 100% 22%, 82% 43%, 70% 32%, 70% 100%, 30% 100%, 30% 32%, 18% 43%, 0 22%);
+}
+
+.clip-shoe {
+  clip-path: polygon(8% 45%, 35% 42%, 49% 57%, 95% 67%, 100% 88%, 94% 98%, 5% 98%, 0 84%);
+}
+
+.clip-bottle {
+  clip-path: polygon(35% 0, 65% 0, 68% 13%, 78% 20%, 83% 100%, 17% 100%, 22% 20%, 32% 13%);
+}
+
+.clip-bag {
+  clip-path: polygon(20% 20%, 80% 20%, 100% 100%, 0 100%);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f7f6f2;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4d4cc;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a0;
+}
