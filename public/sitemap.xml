@@ -4,77 +4,77 @@
   <!-- Homepage -->
   <url>
     <loc>./</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <!-- Category: Plain T-shirts -->
   <url>
     <loc>./#category=plain-t-shirts</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <!-- Category: Printed T-shirts -->
   <url>
     <loc>./#category=printed-t-shirts</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <!-- Category: Gym T-shirts -->
   <url>
     <loc>./#category=gym-t-shirts</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <!-- Category: Shirts -->
   <url>
     <loc>./#category=shirts</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <!-- Category: Jeans -->
   <url>
     <loc>./#category=jeans</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <!-- Category: Trousers -->
   <url>
     <loc>./#category=trousers</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <!-- Category: Shorts -->
   <url>
     <loc>./#category=shorts</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <!-- Category: Joggers -->
   <url>
     <loc>./#category=joggers</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <!-- Category: Hoodies & Sweatshirts -->
   <url>
     <loc>./#category=hoodies-sweatshirts</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <!-- Product: TL-PTS-001 -->
   <url>
     <loc>./#product=TL-PTS-001</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -86,7 +86,7 @@
   <!-- Product: TL-PTS-002 -->
   <url>
     <loc>./#product=TL-PTS-002</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -98,7 +98,7 @@
   <!-- Product: TL-PTS-003 -->
   <url>
     <loc>./#product=TL-PTS-003</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -110,7 +110,7 @@
   <!-- Product: TL-PTS-004 -->
   <url>
     <loc>./#product=TL-PTS-004</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -122,7 +122,7 @@
   <!-- Product: TL-PRT-001 -->
   <url>
     <loc>./#product=TL-PRT-001</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -134,7 +134,7 @@
   <!-- Product: TL-PRT-002 -->
   <url>
     <loc>./#product=TL-PRT-002</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -146,7 +146,7 @@
   <!-- Product: TL-PRT-003 -->
   <url>
     <loc>./#product=TL-PRT-003</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -158,7 +158,7 @@
   <!-- Product: TL-GYM-001 -->
   <url>
     <loc>./#product=TL-GYM-001</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -170,7 +170,7 @@
   <!-- Product: TL-GYM-002 -->
   <url>
     <loc>./#product=TL-GYM-002</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -182,7 +182,7 @@
   <!-- Product: TL-GYM-003 -->
   <url>
     <loc>./#product=TL-GYM-003</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -194,7 +194,7 @@
   <!-- Product: TL-SHT-001 -->
   <url>
     <loc>./#product=TL-SHT-001</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -206,7 +206,7 @@
   <!-- Product: TL-SHT-002 -->
   <url>
     <loc>./#product=TL-SHT-002</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -218,7 +218,7 @@
   <!-- Product: TL-SHT-003 -->
   <url>
     <loc>./#product=TL-SHT-003</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -230,7 +230,7 @@
   <!-- Product: TL-JNS-001 -->
   <url>
     <loc>./#product=TL-JNS-001</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -242,7 +242,7 @@
   <!-- Product: TL-JNS-002 -->
   <url>
     <loc>./#product=TL-JNS-002</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -254,7 +254,7 @@
   <!-- Product: TL-JNS-003 -->
   <url>
     <loc>./#product=TL-JNS-003</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -266,7 +266,7 @@
   <!-- Product: TL-TRS-001 -->
   <url>
     <loc>./#product=TL-TRS-001</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -278,7 +278,7 @@
   <!-- Product: TL-TRS-002 -->
   <url>
     <loc>./#product=TL-TRS-002</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -290,7 +290,7 @@
   <!-- Product: TL-SHT-010 -->
   <url>
     <loc>./#product=TL-SHT-010</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -302,7 +302,7 @@
   <!-- Product: TL-SHT-011 -->
   <url>
     <loc>./#product=TL-SHT-011</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -314,7 +314,7 @@
   <!-- Product: TL-JGR-001 -->
   <url>
     <loc>./#product=TL-JGR-001</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -326,7 +326,7 @@
   <!-- Product: TL-JGR-002 -->
   <url>
     <loc>./#product=TL-JGR-002</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -338,7 +338,7 @@
   <!-- Product: TL-HOD-001 -->
   <url>
     <loc>./#product=TL-HOD-001</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -350,7 +350,7 @@
   <!-- Product: TL-HOD-002 -->
   <url>
     <loc>./#product=TL-HOD-002</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -362,7 +362,7 @@
   <!-- Product: TL-HOD-003 -->
   <url>
     <loc>./#product=TL-HOD-003</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <image:image>

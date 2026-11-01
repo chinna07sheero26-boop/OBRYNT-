@@ -7,6 +7,8 @@ interface FooterProps {
   onScrollToStudio: () => void;
   isOwnerAuthenticated?: boolean;
   onOpenOwnerDashboard?: () => void;
+  isStaffAuthenticated?: boolean;
+  onOpenStaffLogin?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -15,6 +17,8 @@ export const Footer: React.FC<FooterProps> = ({
   onScrollToStudio,
   isOwnerAuthenticated = false,
   onOpenOwnerDashboard,
+  isStaffAuthenticated = false,
+  onOpenStaffLogin,
 }) => {
   const currentYear = new Date().getFullYear();
 
@@ -152,14 +156,24 @@ export const Footer: React.FC<FooterProps> = ({
             © {currentYear} OBRYNT Co. All rights reserved. Demo storefront. Product listings, prices and custom studio previews are examples.
           </p>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {onOpenStaffLogin && (
+              <button
+                onClick={onOpenStaffLogin}
+                className="text-[10px] text-stone-500 hover:text-cyan-400 transition-colors cursor-pointer"
+                title="Staff Operations & Fulfillment Portal"
+              >
+                {isStaffAuthenticated ? '• Staff Operations (Active)' : '• Staff Portal'}
+              </button>
+            )}
+
             {onOpenOwnerDashboard && (
               <button
                 onClick={onOpenOwnerDashboard}
-                className="text-[10px] text-stone-600 hover:text-stone-400 transition-colors cursor-pointer"
-                title="Merchant & Staff Login"
+                className="text-[10px] text-stone-600 hover:text-[#d7ff3f] transition-colors cursor-pointer"
+                title="Store Owner Portal"
               >
-                {isOwnerAuthenticated ? '• Owner OS (Active)' : '• Staff Access'}
+                {isOwnerAuthenticated ? '• Owner OS (Active)' : '• Owner Portal'}
               </button>
             )}
 

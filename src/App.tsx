@@ -26,6 +26,17 @@ import {
   savePromoCodes,
   updateOrderStatusInStorage,
 } from './services/storeSettingsService';
+import {
+  isUserAuthorizedOwner,
+  terminateActiveSession,
+  createSessionFromSupabaseUser,
+  AuthSession,
+} from './services/authService';
+import {
+  checkIsAdminOrOwnerSession,
+  signOutSupabaseAuth,
+  onSupabaseAuthStateChange,
+} from './services/supabaseClient';
 import { Navbar } from './components/Navbar';
 import { HeroBanner } from './components/HeroBanner';
 import { TrustBadges } from './components/TrustBadges';
@@ -39,6 +50,13 @@ import { AccountModal } from './components/AccountModal';
 import { AccountSection } from './components/AccountSection';
 import { OwnerDashboard } from './components/OwnerDashboard';
 import { OwnerLoginModal } from './components/OwnerLoginModal';
+import { StaffDashboard } from './components/StaffDashboard';
+import { StaffLoginModal } from './components/StaffLoginModal';
+import {
+  isStaffAuthenticated,
+  clearStaffSession,
+  StaffSession,
+} from './services/staffAuthService';
 import { Newsletter } from './components/Newsletter';
 import { Footer } from './components/Footer';
 import { ArrowUpDown, ShieldCheck, Sparkles, SlidersHorizontal, Check, LogOut } from 'lucide-react';
@@ -51,17 +69,18 @@ export default function App() {
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => getStoredStoreSettings());
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>(() => getStoredPromoCodes());
 
-  // Owner Authentication & Access State
+  // Owner Authentication & Access State (Cryptographically Verified Session)
   // Public customers will have isOwnerAuthenticated = false by default
   const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('obrynt_owner_authenticated') === 'true';
-    } catch {
-      return false;
-    }
+    return isUserAuthorizedOwner();
   });
   const [isOwnerDashboardOpen, setIsOwnerDashboardOpen] = useState<boolean>(false);
   const [isOwnerLoginOpen, setIsOwnerLoginOpen] = useState<boolean>(false);
+
+  // Staff Authentication & Operations Station State
+  const [isStaffAuth, setIsStaffAuth] = useState<boolean>(() => isStaffAuthenticated());
+  const [isStaffDashboardOpen, setIsStaffDashboardOpen] = useState<boolean>(false);
+  const [isStaffLoginOpen, setIsStaffLoginOpen] = useState<boolean>(false);
 
   // Filter State
   const [activeCategory, setActiveCategory] = useState<string>('All');
@@ -131,51 +150,139 @@ export default function App() {
     }, 2800);
   };
 
-  // Owner Secret Shortcuts:
-  // 1. URL parameter: ?owner=true or #owner or #admin prompts for PIN
-  // 2. Keyboard shortcut: Ctrl + Shift + O (or Cmd + Shift + O)
+  // Dedicated /admin (Owner) & /staff (Staff Operations) Route & Access Controls
+  // 1. Direct path navigation to /admin, #admin, /staff, #staff
+  // 2. Secret URL parameters or keyboard shortcuts:
+  //    Ctrl + Shift + O => Owner Control Center
+  //    Ctrl + Shift + S => Staff Operations Station
   useEffect(() => {
-    try {
-      const search = window.location.search;
-      const hash = window.location.hash;
-      if (search.includes('owner=true') || hash === '#owner' || hash === '#admin') {
-        if (isOwnerAuthenticated) {
-          setIsOwnerDashboardOpen(true);
-        } else {
-          setIsOwnerLoginOpen(true);
+    let isMounted = true;
+
+    const verifyRoutes = async () => {
+      try {
+        const pathname = window.location.pathname;
+        const search = window.location.search;
+        const hash = window.location.hash;
+
+        const isAdminRequested =
+          pathname === '/admin' ||
+          pathname.startsWith('/admin') ||
+          search.includes('owner=true') ||
+          hash === '#owner' ||
+          hash === '#admin';
+
+        const isStaffRequested =
+          pathname === '/staff' ||
+          pathname.startsWith('/staff') ||
+          search.includes('staff=true') ||
+          hash === '#staff';
+
+        // 1. Check Owner/Admin Route
+        if (isAdminRequested) {
+          const supabaseCheck = await checkIsAdminOrOwnerSession();
+          if (supabaseCheck.isAuthorized && supabaseCheck.user && supabaseCheck.profile) {
+            if (isMounted) {
+              setIsOwnerAuthenticated(true);
+              await createSessionFromSupabaseUser(
+                supabaseCheck.user.id,
+                supabaseCheck.user.email || '',
+                supabaseCheck.profile.role
+              );
+              setIsOwnerDashboardOpen(true);
+            }
+          } else if (isUserAuthorizedOwner()) {
+            if (isMounted) {
+              setIsOwnerAuthenticated(true);
+              setIsOwnerDashboardOpen(true);
+            }
+          } else {
+            if (isMounted) {
+              setIsOwnerAuthenticated(false);
+              setIsOwnerDashboardOpen(false);
+              setIsOwnerLoginOpen(true);
+            }
+          }
         }
+
+        // 2. Check Staff Route
+        if (isStaffRequested) {
+          if (isStaffAuthenticated()) {
+            if (isMounted) {
+              setIsStaffAuth(true);
+              setIsStaffDashboardOpen(true);
+            }
+          } else {
+            if (isMounted) {
+              setIsStaffAuth(false);
+              setIsStaffDashboardOpen(false);
+              setIsStaffLoginOpen(true);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error verifying portal routes:', err);
       }
-    } catch {}
+    };
+
+    verifyRoutes();
+
+    // Real-time Supabase Auth state listener for Owner
+    const { unsubscribe } = onSupabaseAuthStateChange(async (event, session, profile) => {
+      if (session?.user && profile && (profile.role === 'owner' || profile.role === 'admin')) {
+        setIsOwnerAuthenticated(true);
+      } else if (event === 'SIGNED_OUT') {
+        setIsOwnerAuthenticated(false);
+        setIsOwnerDashboardOpen(false);
+      }
+    });
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl + Shift + O: Owner Dashboard
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'o') {
         e.preventDefault();
-        if (isOwnerAuthenticated) {
+        if (isUserAuthorizedOwner()) {
           setIsOwnerDashboardOpen((prev) => !prev);
         } else {
           setIsOwnerLoginOpen(true);
         }
       }
+
+      // Ctrl + Shift + S: Staff Dashboard
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (isStaffAuthenticated()) {
+          setIsStaffDashboardOpen((prev) => !prev);
+        } else {
+          setIsStaffLoginOpen(true);
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOwnerAuthenticated]);
+    return () => {
+      isMounted = false;
+      unsubscribe();
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
-  const handleOwnerLoginSuccess = () => {
+  const handleOwnerLoginSuccess = (session: AuthSession) => {
     setIsOwnerAuthenticated(true);
-    try {
-      localStorage.setItem('obrynt_owner_authenticated', 'true');
-    } catch {}
     setIsOwnerDashboardOpen(true);
-    showNotice('Owner verified! Welcome to your Merchant Dashboard.');
+    showNotice(`Owner authenticated · Master session active (${session.role.toUpperCase()})`);
   };
 
-  const handleLogoutOwner = () => {
+  const handleLogoutOwner = async () => {
+    try {
+      await signOutSupabaseAuth();
+    } catch {}
+    terminateActiveSession();
     setIsOwnerAuthenticated(false);
     setIsOwnerDashboardOpen(false);
     try {
-      localStorage.removeItem('obrynt_owner_authenticated');
+      if (window.location.pathname.startsWith('/admin') || window.location.hash.includes('admin')) {
+        window.history.replaceState({}, '', '/');
+      }
     } catch {}
     showNotice('Logged out of Owner Mode. Public customer view is now active.');
   };
@@ -185,6 +292,33 @@ export default function App() {
       setIsOwnerDashboardOpen(true);
     } else {
       setIsOwnerLoginOpen(true);
+    }
+  };
+
+  // Staff Portal Handlers
+  const handleStaffLoginSuccess = (session: StaffSession) => {
+    setIsStaffAuth(true);
+    setIsStaffDashboardOpen(true);
+    showNotice('Staff member authenticated · Operations station active');
+  };
+
+  const handleLogoutStaff = () => {
+    clearStaffSession();
+    setIsStaffAuth(false);
+    setIsStaffDashboardOpen(false);
+    try {
+      if (window.location.pathname.startsWith('/staff') || window.location.hash.includes('staff')) {
+        window.history.replaceState({}, '', '/');
+      }
+    } catch {}
+    showNotice('Logged out of Staff Portal.');
+  };
+
+  const handleTriggerStaffAccess = () => {
+    if (isStaffAuth || isStaffAuthenticated()) {
+      setIsStaffDashboardOpen(true);
+    } else {
+      setIsStaffLoginOpen(true);
     }
   };
 
@@ -418,6 +552,21 @@ export default function App() {
         onUpdatePromoCodes={handleUpdatePromoCodes}
         onCloseDashboard={() => setIsOwnerDashboardOpen(false)}
         onLogoutOwner={handleLogoutOwner}
+        onShowNotice={showNotice}
+      />
+    );
+  }
+
+  // If the Staff Dashboard is active, show the Staff Operations Portal
+  if (isStaffDashboardOpen) {
+    return (
+      <StaffDashboard
+        products={products}
+        orders={orders}
+        onUpdateProducts={handleUpdateProducts}
+        onUpdateOrderStatus={handleUpdateOrderStatus}
+        onCloseStaffDashboard={() => setIsStaffDashboardOpen(false)}
+        onLogoutStaff={handleLogoutStaff}
         onShowNotice={showNotice}
       />
     );
@@ -658,6 +807,8 @@ export default function App() {
         onScrollToStudio={scrollToStudio}
         isOwnerAuthenticated={isOwnerAuthenticated}
         onOpenOwnerDashboard={handleTriggerOwnerAccess}
+        isStaffAuthenticated={isStaffAuth}
+        onOpenStaffLogin={handleTriggerStaffAccess}
       />
 
       {/* Floating Toast Notification */}
@@ -728,12 +879,20 @@ export default function App() {
         onOpenCustomStudio={scrollToStudio}
       />
 
-      {/* Owner Passcode Security Modal */}
+      {/* Cryptographically Verified Owner Security Gateway */}
       <OwnerLoginModal
         isOpen={isOwnerLoginOpen}
         onClose={() => setIsOwnerLoginOpen(false)}
         onSuccess={handleOwnerLoginSuccess}
-        savedPasscode="2026"
+        onShowNotice={showNotice}
+      />
+
+      {/* Server-Side Validated Staff Operations Gateway */}
+      <StaffLoginModal
+        isOpen={isStaffLoginOpen}
+        onClose={() => setIsStaffLoginOpen(false)}
+        onSuccess={handleStaffLoginSuccess}
+        onShowNotice={showNotice}
       />
     </div>
   );

@@ -26,6 +26,9 @@ import {
   ArrowLeft,
   RefreshCw,
   Lock,
+  Building2,
+  PackageCheck,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   Product,
@@ -36,9 +39,23 @@ import {
   PromoCode,
   ALL_CATEGORIES,
   Category,
+  Supplier,
+  SupplierFulfilment,
 } from '../types';
 import { exportCatalogueToCSV } from '../services/csvService';
+import {
+  getStoredSuppliers,
+  getStoredFulfilments,
+  saveSuppliers,
+  saveFulfilments,
+  splitOrderIntoSupplierFulfilments,
+  calculateFinancials,
+} from '../services/supplierService';
 import { InvoiceModal } from './InvoiceModal';
+import { SupplierManagementTab } from './owner/SupplierManagementTab';
+import { SupplierFulfilmentTab } from './owner/SupplierFulfilmentTab';
+import { FinancialsTab } from './owner/FinancialsTab';
+import { SecurityAuditTab } from './owner/SecurityAuditTab';
 
 interface OwnerDashboardProps {
   products: Product[];
@@ -72,8 +89,39 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   onShowNotice,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'orders' | 'custom-queue' | 'inventory' | 'promotions' | 'customers' | 'settings'
+    | 'overview'
+    | 'orders'
+    | 'custom-queue'
+    | 'inventory'
+    | 'promotions'
+    | 'customers'
+    | 'settings'
+    | 'suppliers'
+    | 'fulfilments'
+    | 'financials'
+    | 'security'
   >('overview');
+
+  // Supplier & Fulfilment State
+  const [suppliers, setSuppliers] = useState<Supplier[]>(() => getStoredSuppliers());
+  const [fulfilments, setFulfilments] = useState<SupplierFulfilment[]>(() => {
+    const existing = getStoredFulfilments();
+    if (existing.length === 0 && orders.length > 0) {
+      const sups = getStoredSuppliers();
+      const all: SupplierFulfilment[] = [];
+      orders.forEach((o) => {
+        all.push(...splitOrderIntoSupplierFulfilments(o, sups));
+      });
+      saveFulfilments(all);
+      return all;
+    }
+    return existing;
+  });
+
+  // Accurate marketplace financial calculations
+  const financials = useMemo(() => {
+    return calculateFinancials(orders, fulfilments);
+  }, [orders, fulfilments]);
 
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
@@ -88,6 +136,9 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     name: '',
     category: 'T-Shirts',
     audience: 'Unisex',
+    supplierId: '',
+    supplierName: '',
+    wholesalePrice: 0,
     price: 699,
     originalPrice: 999,
     sizes: ['S', 'M', 'L', 'XL'],
@@ -243,6 +294,11 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       cat: newProd.category || 'T-Shirts',
       audience: newProd.audience || 'Unisex',
       aud: newProd.audience || 'Unisex',
+      supplierId: newProd.supplierId || undefined,
+      supplierName:
+        newProd.supplierName ||
+        (newProd.supplierId ? suppliers.find((s) => s.id === newProd.supplierId)?.brandName : undefined),
+      wholesalePrice: newProd.wholesalePrice ? Number(newProd.wholesalePrice) : undefined,
       price: Number(newProd.price),
       originalPrice: Number(newProd.originalPrice || newProd.price),
       sizes: newProd.sizes || ['S', 'M', 'L', 'XL'],
@@ -470,6 +526,72 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               <div className="flex items-center gap-2.5">
                 <Settings className="w-4 h-4" />
                 <span>Storefront Settings</span>
+              </div>
+            </button>
+
+            <div className="pt-3 pb-1 px-3 text-[10px] font-black uppercase tracking-widest text-stone-500">
+              MARKETPLACE & SECURITY
+            </div>
+
+            <button
+              onClick={() => setActiveTab('suppliers')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
+                activeTab === 'suppliers'
+                  ? 'bg-[#d7ff3f] text-[#111111]'
+                  : 'text-stone-300 hover:bg-stone-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Building2 className="w-4 h-4" />
+                <span>Companies & Suppliers</span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${activeTab === 'suppliers' ? 'bg-black text-[#d7ff3f]' : 'bg-stone-800 text-stone-300'}`}>
+                {suppliers.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('fulfilments')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
+                activeTab === 'fulfilments'
+                  ? 'bg-[#d7ff3f] text-[#111111]'
+                  : 'text-stone-300 hover:bg-stone-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <PackageCheck className="w-4 h-4" />
+                <span>Supplier Fulfilment</span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${activeTab === 'fulfilments' ? 'bg-black text-[#d7ff3f]' : 'bg-stone-800 text-stone-300'}`}>
+                {fulfilments.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('financials')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
+                activeTab === 'financials'
+                  ? 'bg-[#d7ff3f] text-[#111111]'
+                  : 'text-stone-300 hover:bg-stone-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <DollarSign className="w-4 h-4" />
+                <span>Financials & Margin</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('security')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
+                activeTab === 'security'
+                  ? 'bg-[#d7ff3f] text-[#111111]'
+                  : 'text-stone-300 hover:bg-stone-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Cybersecurity & Vault</span>
               </div>
             </button>
           </nav>
@@ -1119,6 +1241,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                         <th className="p-3.5">Item & SKU</th>
                         <th className="p-3.5">Category</th>
                         <th className="p-3.5">Audience</th>
+                        <th className="p-3.5">Supplying Company</th>
                         <th className="p-3.5">Price (₹)</th>
                         <th className="p-3.5">Stock</th>
                         <th className="p-3.5">Tag</th>
@@ -1142,6 +1265,38 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                           </td>
                           <td className="p-3.5 text-stone-300 font-bold">{p.category}</td>
                           <td className="p-3.5 text-stone-400">{p.audience || p.aud || 'Unisex'}</td>
+                          <td className="p-3.5">
+                            <select
+                              value={p.supplierId || ''}
+                              onChange={(e) => {
+                                const supId = e.target.value;
+                                const matched = suppliers.find((s) => s.id === supId);
+                                const updated = products.map((prod) =>
+                                  prod.sku === p.sku
+                                    ? {
+                                        ...prod,
+                                        supplierId: supId || undefined,
+                                        supplierName: matched ? matched.brandName : undefined,
+                                      }
+                                    : prod
+                                );
+                                onUpdateProducts(updated);
+                                onShowNotice(
+                                  matched
+                                    ? `Linked ${p.name} to ${matched.brandName}`
+                                    : `Set ${p.name} to In-House Atelier`
+                                );
+                              }}
+                              className="bg-stone-900 text-stone-300 border border-stone-700 hover:border-[#d7ff3f] rounded-lg px-2 py-1 text-[11px] font-semibold outline-hidden cursor-pointer max-w-[170px] truncate"
+                            >
+                              <option value="">OBRYNT Atelier (In-House)</option>
+                              {suppliers.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                  {s.brandName}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
                           <td className="p-3.5">
                             <div className="flex items-center gap-1">
                               <span className="text-stone-400">₹</span>
@@ -1529,6 +1684,44 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               </form>
             </div>
           )}
+
+          {/* TAB 8: COMPANIES & SUPPLIERS DIRECTORY */}
+          {activeTab === 'suppliers' && (
+            <SupplierManagementTab
+              suppliers={suppliers}
+              onUpdateSuppliers={setSuppliers}
+              onShowNotice={onShowNotice}
+              products={products}
+              onUpdateProducts={onUpdateProducts}
+            />
+          )}
+
+          {/* TAB 9: SUPPLIER FULFILMENT & ORDER ROUTING */}
+          {activeTab === 'fulfilments' && (
+            <SupplierFulfilmentTab
+              fulfilments={fulfilments}
+              suppliers={suppliers}
+              orders={orders}
+              onUpdateFulfilments={setFulfilments}
+              onShowNotice={onShowNotice}
+            />
+          )}
+
+          {/* TAB 10: FINANCIAL LEDGER & MARGIN WATERFALL */}
+          {activeTab === 'financials' && (
+            <FinancialsTab
+              financials={financials}
+              orders={orders}
+              fulfilments={fulfilments}
+              suppliers={suppliers}
+              onShowNotice={onShowNotice}
+            />
+          )}
+
+          {/* TAB 11: CYBERSECURITY & AUDIT VAULT */}
+          {activeTab === 'security' && (
+            <SecurityAuditTab onShowNotice={onShowNotice} />
+          )}
         </main>
       </div>
 
@@ -1617,6 +1810,45 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                     required
                     value={newProd.stock}
                     onChange={(e) => setNewProd({ ...newProd, stock: Number(e.target.value) })}
+                    className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-white font-bold outline-hidden focus:border-[#d7ff3f]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-stone-400 font-bold mb-1">
+                    Supplying Company / Brand
+                  </label>
+                  <select
+                    value={newProd.supplierId || ''}
+                    onChange={(e) => {
+                      const supId = e.target.value;
+                      const matched = suppliers.find((s) => s.id === supId);
+                      setNewProd({
+                        ...newProd,
+                        supplierId: supId,
+                        supplierName: matched ? matched.brandName : '',
+                      });
+                    }}
+                    className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-white font-bold outline-hidden focus:border-[#d7ff3f]"
+                  >
+                    <option value="">OBRYNT Atelier (In-House Production)</option>
+                    {suppliers.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.brandName} ({s.name})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-stone-400 font-bold mb-1">Wholesale Cost (₹)</label>
+                  <input
+                    type="number"
+                    value={newProd.wholesalePrice || ''}
+                    onChange={(e) => setNewProd({ ...newProd, wholesalePrice: Number(e.target.value) })}
+                    placeholder="e.g. 350"
                     className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-white font-bold outline-hidden focus:border-[#d7ff3f]"
                   />
                 </div>

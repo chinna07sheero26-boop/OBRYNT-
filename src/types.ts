@@ -87,6 +87,9 @@ export interface Product {
   reviewCount?: number;
   material?: string;
   fit?: string;
+  supplierId?: string;
+  supplierName?: string;
+  wholesalePrice?: number;
 }
 
 export interface CartItem {
@@ -173,5 +176,68 @@ export interface StoreSettings {
   enableCod: boolean;
   enableUpi: boolean;
   enableCards: boolean;
+  masterPasswordHash?: string;
+  requireAuthForAdmin?: boolean;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  brandName: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  status: 'active' | 'pending' | 'suspended';
+  commercialTerms: string; // e.g. "Net 30 days, 20% margin"
+  paymentTerms?: string; // e.g. "Net 15 days via NEFT wire"
+  shippingTerms?: string; // e.g. "Door-to-door courier, FOB factory"
+  wholesalePrices?: string; // e.g. "35% off MRP, ₹320 base per unit"
+  productCategories?: string[]; // e.g. ["T-Shirts", "Gym & Sports"]
+  wholesaleDiscountPct: number;
+  dispatchDays: number;
+  acceptsSingleItem: boolean;
+  acceptsCod: boolean;
+  acceptsReturns: boolean;
+  autoForwardOrders: boolean;
+  rating: number;
+  totalFulfilled: number;
+  totalReturned: number;
+  createdAt: string;
+}
+
+export interface SupplierFulfilment {
+  id: string;
+  orderId: string;
+  supplierId: string;
+  supplierName: string;
+  items: CartItem[];
+  totalWholesaleCost: number;
+  customerPrice: number;
+  shippingCost: number;
+  commission: number;
+  estimatedNetMargin: number;
+  status: 'pending' | 'acknowledged' | 'in_preparation' | 'dispatched' | 'delivered' | 'cancelled' | 'returned';
+  dispatchDate?: string;
+  trackingNumber?: string;
+  courierPartner?: string;
+  supplierNotes?: string;
+  createdAt: string;
+  settlementStatus: 'unsettled' | 'eligible' | 'settled';
+  settlementReference?: string;
+}
+
+export interface FinancialBreakdown {
+  grossSales: number;
+  supplierCostPayable: number;
+  shippingCostLiability: number;
+  courierCodFees: number;
+  platformGrossMargin: number;
+  estimatedTaxes: number;
+  estimatedNetProfit: number;
+  pendingCodRemittances: number;
 }
 
