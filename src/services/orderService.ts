@@ -136,13 +136,23 @@ export function saveOrderToStorage(order: OrderDetails): OrderDetails[] {
     localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(updated));
 
     // Also record transaction
+    const txId = order.paymentGatewayRef || `TX-${order.orderId.replace(/^OB-/, '')}`;
+    const txStatus =
+      order.paymentStatus === 'captured'
+        ? 'Captured (Razorpay)'
+        : order.paymentStatus === 'cod_pending'
+        ? 'Pending COD'
+        : 'Confirmed';
+
     recordTransaction({
-      id: `TX-${order.orderId.replace(/^OB-/, '')}`,
+      id: txId,
       orderId: order.orderId,
       amount: order.total,
       method: order.paymentMethod,
-      status: 'Completed (Demo)',
+      status: txStatus,
       date: order.date,
+      gatewayRef: order.paymentGatewayRef,
+      gateway: order.paymentMethod.includes('Razorpay') ? 'Razorpay' : 'Standard',
     });
 
     return updated;

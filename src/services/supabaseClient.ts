@@ -118,6 +118,82 @@ export function getSupabaseStatus(): SupabaseConfigStatus {
 }
 
 /**
+ * Test a Supabase Project URL and Anon Key directly
+ * Checks both network reachability and table status
+ */
+export async function testSupabaseConnection(
+  url: string,
+  anonKey: string
+): Promise<{ success: boolean; message: string; schemaReady: boolean; tablesFound?: string[] }> {
+  if (!url || !url.startsWith('https://')) {
+    return {
+      success: false,
+      message: 'Invalid Project URL. It must start with https:// and end with .supabase.co',
+      schemaReady: false,
+    };
+  }
+
+  if (!anonKey || anonKey.length < 20) {
+    return {
+      success: false,
+      message: 'Invalid Anon Publishable Key. Please copy the anon key from Supabase Project Settings -> API.',
+      schemaReady: false,
+    };
+  }
+
+  try {
+    const testClient = createClient(url.trim(), anonKey.trim(), {
+      auth: { persistSession: false },
+    });
+
+    // 1. Test ping to auth
+    const { error: authErr } = await testClient.auth.getSession();
+    if (authErr && authErr.message.includes('Invalid API key')) {
+      return {
+        success: false,
+        message: 'Supabase rejected the Anon Key (Invalid API Key). Please verify you copied the "anon public" key.',
+        schemaReady: false,
+      };
+    }
+
+    // 2. Test if profiles table exists
+    const { data, error: tableErr } = await testClient
+      .from('profiles')
+      .select('id')
+      .limit(1);
+
+    if (tableErr) {
+      if (tableErr.code === '42P01' || tableErr.message.includes('relation "public.profiles" does not exist')) {
+        return {
+          success: true,
+          message: 'Successfully connected to Supabase! However, the database tables have not been created yet. Please execute supabase/schema.sql in your Supabase SQL Editor.',
+          schemaReady: false,
+        };
+      }
+      // If RLS permission error or other response, connection is still valid
+      return {
+        success: true,
+        message: `Connected to Supabase! Note: ${tableErr.message}`,
+        schemaReady: true,
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Connected to Supabase database successfully! Tables and RLS policies are active.',
+      schemaReady: true,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err?.message || 'Could not reach Supabase endpoint. Please check your URL and network.',
+      schemaReady: false,
+    };
+  }
+}
+
+
+/**
  * Verify user role from public.profiles table (protected by Row Level Security)
  * Only users who have 'owner' or 'admin' roles will be allowed into the /admin dashboard.
  */

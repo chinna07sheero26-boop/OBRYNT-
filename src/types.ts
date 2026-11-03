@@ -132,6 +132,12 @@ export interface OrderDetails {
   total: number;
   paymentMethod: string;
   status: 'Demo order placed' | 'Confirmed' | 'Processing' | 'Shipped' | 'Delivered' | string;
+  paymentId?: string;
+  paymentGatewayRef?: string;
+  paymentStatus?: 'pending' | 'authorized' | 'captured' | 'failed' | 'refunded' | 'cod_pending' | string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
 }
 
 export interface TransactionRecord {
@@ -141,6 +147,8 @@ export interface TransactionRecord {
   method: string;
   status: string;
   date: string;
+  gatewayRef?: string;
+  gateway?: string;
 }
 
 export interface ProductReview {

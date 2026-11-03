@@ -291,14 +291,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </div>
 
               <p className="text-[10px] text-stone-500 text-center leading-normal">
-                Demo checkout only. No real payment required.
+                Razorpay Test Mode & Cash on Delivery supported.
               </p>
 
               <button
                 onClick={onProceedCheckout}
                 className="w-full py-3.5 bg-[#111111] hover:bg-black text-[#d7ff3f] font-black text-xs sm:text-sm rounded-full transition-transform active:scale-98 cursor-pointer shadow-md flex items-center justify-center gap-2"
               >
-                <span>PROCEED TO DEMO CHECKOUT</span>
+                <span>PROCEED TO CHECKOUT</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
