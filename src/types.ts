@@ -51,17 +51,42 @@ export const CATEGORY_METADATA: CategoryInfo[] = [
   { name: 'Custom Design', icon: '✳', desc: 'Create your own' },
 ];
 
+export interface ArtworkPlacement {
+  url: string;
+  x: number; // percentage offset -50 to 50
+  y: number; // percentage offset -50 to 50
+  scale: number; // scale multiplier 0.3 to 2.0
+  rotation: number; // rotation in degrees
+  preset?: 'pocket' | 'chest' | 'center' | 'full' | 'custom';
+}
+
 export interface CustomDesign {
   id?: string;
-  text: string;
+  text?: string;
   side: 'Front' | 'Back';
   size: string;
   colorHex: string;
   colorName: string;
-  textColor: string;
+  textColor?: string;
   fontFamily?: string;
   fontSize?: number;
   dateCreated?: string;
+  // Advanced AI Studio Garment Details
+  category?: string;
+  clothingType?: string;
+  gender?: 'Men' | 'Women' | 'Unisex';
+  fit?: 'Regular fit' | 'Oversized fit' | 'Relaxed fit' | 'Athletic fit' | string;
+  neckline?: 'Round neck' | 'V-neck' | 'Polo collar' | 'Hooded' | 'Spread collar' | string;
+  sleeve?: 'Half sleeve' | 'Full sleeve' | 'Sleeveless' | string;
+  artworkUrl?: string;
+  frontArtwork?: ArtworkPlacement;
+  backArtwork?: ArtworkPlacement;
+  prompt?: string;
+  stylePreset?: string;
+  basePrice?: number;
+  printPrice?: number;
+  totalPrice?: number;
+  previewUrl?: string;
 }
 
 export interface Product {
@@ -85,11 +110,51 @@ export interface Product {
   imageUrl: string;
   rating?: number;
   reviewCount?: number;
+  brand?: string;
+  brandName?: string;
+  subcategory?: string;
+  galleryUrls?: string[];
+  colors?: string[];
+  status?: 'active' | 'draft' | 'out_of_stock';
+  isPublished?: boolean;
   material?: string;
   fit?: string;
   supplierId?: string;
   supplierName?: string;
   wholesalePrice?: number;
+  confidence?: number;
+  needsReview?: boolean;
+  supplierProductId?: string;
+  sourceFile?: string;
+  importBatchId?: string;
+}
+
+export interface BulkImportItem {
+  id: string;
+  raw: Record<string, any>;
+  product: Product;
+  confidence: number;
+  category: string;
+  subcategory: string;
+  audience: string;
+  brand: string;
+  isDuplicate: boolean;
+  duplicateOfSku?: string;
+  status: 'pending' | 'categorized' | 'needs_review' | 'imported' | 'failed';
+  error?: string;
+}
+
+export interface BulkImportReport {
+  batchId: string;
+  timestamp: string;
+  totalParsed: number;
+  categorized: number;
+  needsReview: number;
+  duplicates: number;
+  imported: number;
+  failed: number;
+  categoriesBreakdown: Record<string, number>;
+  sourceName: string;
 }
 
 export interface CartItem {

@@ -20,9 +20,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || 'L');
   const [justAdded, setJustAdded] = useState(false);
 
+  const [imageError, setImageError] = useState(false);
   const audienceLabel = product.audience || product.aud || 'Unisex';
   const categoryLabel = product.category || product.cat || 'Apparel';
-  const tagLabel = product.tag || product.badge || 'POPULAR';
+  const tagLabel = product.tag || product.badge || product.brand || 'POPULAR';
   const type = product.type || 'shirt';
 
   const handleQuickAdd = (e: React.MouseEvent) => {
@@ -55,7 +56,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <div className="h-[210px] sm:h-[230px] bg-[#eeede8] relative flex items-center justify-center overflow-hidden transition-colors group-hover:bg-[#e7e6e0]">
         {/* Tag Pill */}
         <span className="absolute top-3 left-3 bg-[#d7ff3f] text-[#111111] px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider uppercase z-10 shadow-xs">
-          {tagLabel}
+          {product.brand ? product.brand : tagLabel}
         </span>
 
         {/* Wishlist Heart */}
@@ -75,24 +76,32 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-red-600 text-red-600' : ''}`} />
         </button>
 
-        {/* Stylized Garment / Silhouette Geometry with Drop-Shadow */}
-        <div className="relative flex items-center justify-center transition-transform duration-300 group-hover:scale-108">
-          <div
-            className={`${getGarmentClass()} shadow-xl relative transition-all duration-200`}
-            style={{ backgroundColor: product.color || '#171717' }}
-          >
-            {/* Subtle brand embossing on custom shirts */}
-            {type === 'shirt' && (
-              <div
-                className="absolute inset-0 flex items-center justify-center text-[10px] font-black tracking-widest uppercase opacity-40 select-none pointer-events-none"
-                style={{
-                  color: product.color === '#f5f4ed' || product.color === '#d5d0c5' || product.color === '#f4f1e8' ? '#111' : '#fff',
-                }}
-              >
-                OBRYNT
-              </div>
-            )}
-          </div>
+        {/* Product Image with Fallback to Stylized Geometry */}
+        <div className="relative flex items-center justify-center transition-transform duration-300 group-hover:scale-105 w-full h-full p-4">
+          {product.imageUrl && !imageError ? (
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              onError={() => setImageError(true)}
+              className="max-h-[175px] max-w-[175px] w-auto h-auto object-contain drop-shadow-md rounded-lg"
+            />
+          ) : (
+            <div
+              className={`${getGarmentClass()} shadow-xl relative transition-all duration-200 flex items-center justify-center`}
+              style={{ backgroundColor: product.color || '#171717' }}
+            >
+              {type === 'shirt' && (
+                <div
+                  className="text-[10px] font-black tracking-widest uppercase opacity-40 select-none pointer-events-none"
+                  style={{
+                    color: product.color === '#f5f4ed' || product.color === '#d5d0c5' || product.color === '#f4f1e8' ? '#111' : '#fff',
+                  }}
+                >
+                  {product.brand || 'OBRYNT'}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Stock badge if low */}

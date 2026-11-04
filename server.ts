@@ -5,6 +5,9 @@ import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import Razorpay from 'razorpay';
+import { GoogleGenAI } from '@google/genai';
+import { classifyProductLocally, buildGeminiCategorizationPrompt } from './src/utils/aiTaxonomyEngine';
+import { generateThemedArtworkVariations } from './src/utils/aiArtworkGenerator';
 
 dotenv.config();
 
@@ -823,6 +826,137 @@ app.post('/api/payment/razorpay/webhook', express.raw({ type: 'application/json'
   const event = req.body?.event;
   console.log(`[OBRYNT Razorpay Webhook] Received verified event: ${event}`);
   res.json({ status: 'ok', received: true });
+});
+
+// =========================================================================
+// AI AUTO-CATEGORISATION ENDPOINT (GEMINI 3.8 FLASH + LOCAL TAXONOMY FALLBACK)
+// =========================================================================
+let aiClient: GoogleGenAI | null = null;
+try {
+  aiClient = new GoogleGenAI();
+} catch (err) {
+  console.warn('[OBRYNT AI] Note on Gemini client initialization:', err);
+}
+
+app.post('/api/products/ai-categorize', async (req: Request, res: Response): Promise<void> => {
+  const { items } = req.body || {};
+
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: 'Array of items required' });
+    return;
+  }
+
+  // Cap batch size at 40 per request for fast response time
+  const batch = items.slice(0, 40);
+
+  // If Gemini client initialized and API key is present in environment, query Gemini 3.8 Flash
+  if (aiClient && (process.env.GEMINI_API_KEY || process.env.API_KEY)) {
+    try {
+      const prompt = buildGeminiCategorizationPrompt(batch);
+      const geminiRes = await aiClient.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const responseText = geminiRes.text;
+      if (responseText) {
+        const parsed = JSON.parse(responseText);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          res.json({
+            success: true,
+            source: 'gemini-3.8-flash',
+            categorized: parsed,
+          });
+          return;
+        }
+      }
+    } catch (err: any) {
+      console.warn('[OBRYNT AI] Gemini generateContent notice, utilizing local taxonomy rules engine:', err?.message);
+    }
+  }
+
+  // Robust, instant local taxonomy classifier fallback
+  const categorized = batch.map((item: any) => {
+    const classification = classifyProductLocally(item);
+    return {
+      id: item.id,
+      category: classification.category,
+      subcategory: classification.subcategory,
+      audience: classification.audience,
+      brand: classification.brand,
+      sizes: classification.sizes,
+      colors: classification.colors,
+      confidence: classification.confidence,
+      needsReview: classification.needsReview,
+      reason: classification.reason,
+    };
+  });
+
+  res.json({
+    success: true,
+    source: 'local-taxonomy-engine',
+    categorized,
+  });
+});
+
+// =========================================================================
+// AI CLOTHING DESIGN STUDIO ARTWORK ENDPOINT
+// =========================================================================
+app.post('/api/ai/generate-clothing-artwork', async (req: Request, res: Response): Promise<void> => {
+  const { prompt, category = 'T-shirts', garmentColor = '#171717' } = req.body || {};
+  const userPrompt = typeof prompt === 'string' && prompt.trim() ? prompt.trim() : 'OBRYNT Streetwear';
+
+  // Base variations from themed vector generator
+  let designs = generateThemedArtworkVariations(userPrompt, category);
+
+  // If Gemini client initialized and API key is present, attempt image generation with gemini-3.1-flash-lite-image
+  if (aiClient && (process.env.GEMINI_API_KEY || process.env.API_KEY)) {
+    try {
+      const apparelPrompt = `Clean silkscreen graphic print for apparel streetwear: ${userPrompt}. Isolated graphic artwork, flat vector illustration on pure solid white background, high contrast silhouette, bold lines, premium apparel graphic, no t-shirt mockup, no model.`;
+      
+      const imageRes = await aiClient.models.generateContent({
+        model: 'gemini-3.1-flash-lite-image',
+        contents: {
+          parts: [{ text: apparelPrompt }],
+        },
+        config: {
+          imageConfig: {
+            aspectRatio: '1:1',
+          },
+        },
+      });
+
+      for (const part of imageRes.candidates?.[0]?.content?.parts ?? []) {
+        if (part.inlineData?.data) {
+          const mime = part.inlineData.mimeType || 'image/png';
+          const aiArtworkUrl = `data:${mime};base64,${part.inlineData.data}`;
+          designs.unshift({
+            id: `art-gemini-${Date.now()}`,
+            title: 'Gemini AI Vision Graphic',
+            style: 'Neural Generated Vector',
+            prompt: userPrompt,
+            svgUrl: aiArtworkUrl,
+            description: `Bespoke neural silkscreen graphic rendered for "${userPrompt}".`,
+            accentColor: '#d7ff3f',
+          });
+          break;
+        }
+      }
+    } catch (err: any) {
+      console.warn('[OBRYNT AI] Gemini image generation notice, providing themed vector variations:', err?.message);
+    }
+  }
+
+  res.json({
+    success: true,
+    designs,
+    prompt: userPrompt,
+    category,
+    garmentColor,
+  });
 });
 
 // =========================================================================

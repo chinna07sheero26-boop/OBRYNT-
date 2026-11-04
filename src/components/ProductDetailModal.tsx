@@ -38,10 +38,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [pincode, setPincode] = useState('');
   const [pincodeResult, setPincodeResult] = useState<string | null>(null);
 
+  const allImages = [
+    product.imageUrl,
+    ...(Array.isArray(product.galleryUrls) ? product.galleryUrls : []),
+  ].filter(Boolean);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
+
   // Reviews state
   const [reviewsList, setReviewsList] = useState<ProductReview[]>([]);
   useEffect(() => {
     setReviewsList(getStoredReviews());
+    setActiveImageIndex(0);
+    setImageError(false);
   }, [product.sku]);
 
   const ratingData = getProductRatingData(product.sku, reviewsList);
@@ -106,35 +115,64 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-5 sm:p-8 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-start">
-          {/* Left Column: Visual Artwork & Geometry */}
-          <div className="bg-[#eeede8] rounded-2xl p-8 flex flex-col items-center justify-center min-h-[300px] relative shadow-inner">
+          {/* Left Column: Visual Artwork, Images & Gallery */}
+          <div className="bg-[#eeede8] rounded-2xl p-5 sm:p-6 flex flex-col items-center justify-center min-h-[320px] relative shadow-inner">
             <button
               onClick={() => onToggleWishlist(product)}
-              className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md shadow-xs transition-transform cursor-pointer ${
+              className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md shadow-xs transition-transform cursor-pointer z-10 ${
                 isWishlisted ? 'bg-red-50 text-red-600 scale-110' : 'bg-white/80 hover:bg-white text-stone-700'
               }`}
             >
               <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-red-600 text-red-600' : ''}`} />
             </button>
 
-            {/* Stylized Garment Geometry */}
-            <div
-              className={`${getGarmentClass()} shadow-2xl relative transition-all duration-300 hover:scale-105`}
-              style={{ backgroundColor: product.color || '#171717' }}
-            >
-              {type === 'shirt' && (
+            {/* Main Image or Silhouette */}
+            <div className="relative flex items-center justify-center w-full min-h-[220px]">
+              {allImages.length > 0 && !imageError ? (
+                <img
+                  src={allImages[activeImageIndex] || allImages[0]}
+                  alt={product.name}
+                  onError={() => setImageError(true)}
+                  className="max-h-[240px] max-w-full object-contain rounded-xl drop-shadow-lg"
+                />
+              ) : (
                 <div
-                  className="absolute inset-0 flex items-center justify-center text-xs font-black tracking-widest uppercase opacity-40 select-none pointer-events-none"
-                  style={{
-                    color: product.color === '#f5f4ed' || product.color === '#d5d0c5' ? '#111' : '#fff',
-                  }}
+                  className={`${getGarmentClass()} shadow-2xl relative transition-all duration-300 hover:scale-105 flex items-center justify-center`}
+                  style={{ backgroundColor: product.color || '#171717' }}
                 >
-                  OBRYNT
+                  {type === 'shirt' && (
+                    <div
+                      className="text-xs font-black tracking-widest uppercase opacity-40 select-none pointer-events-none"
+                      style={{
+                        color: product.color === '#f5f4ed' || product.color === '#d5d0c5' ? '#111' : '#fff',
+                      }}
+                    >
+                      {product.brand || 'OBRYNT'}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
-            <div className="mt-6 text-xs font-bold text-stone-600">
+            {/* Gallery Thumbnails Strip */}
+            {allImages.length > 1 && (
+              <div className="flex items-center gap-2 mt-4 overflow-x-auto no-scrollbar py-1">
+                {allImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`w-12 h-12 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                      activeImageIndex === idx ? 'border-[#111111] scale-105 shadow-sm' : 'border-stone-300 opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-3 text-xs font-bold text-stone-600">
               Color: <strong>{product.colorName || 'Signature'}</strong> ({product.color})
             </div>
           </div>

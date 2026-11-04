@@ -56,6 +56,8 @@ import { SupplierManagementTab } from './owner/SupplierManagementTab';
 import { SupplierFulfilmentTab } from './owner/SupplierFulfilmentTab';
 import { FinancialsTab } from './owner/FinancialsTab';
 import { SecurityAuditTab } from './owner/SecurityAuditTab';
+import { ProductManagementTab } from './owner/ProductManagementTab';
+import { BulkImportTab } from './owner/BulkImportTab';
 
 interface OwnerDashboardProps {
   products: Product[];
@@ -93,6 +95,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     | 'orders'
     | 'custom-queue'
     | 'inventory'
+    | 'bulk-import'
     | 'promotions'
     | 'customers'
     | 'settings'
@@ -485,6 +488,23 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('bulk-import')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
+                activeTab === 'bulk-import'
+                  ? 'bg-[#d7ff3f] text-[#111111]'
+                  : 'text-stone-300 hover:bg-stone-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-[#d7ff3f] shrink-0" />
+                <span>Smart Bulk Import & AI</span>
+              </div>
+              <span className={`text-[9px] px-1.5 py-0.2 rounded font-black uppercase ${activeTab === 'bulk-import' ? 'bg-black text-[#d7ff3f]' : 'bg-[#d7ff3f]/20 text-[#d7ff3f]'}`}>
+                AI
+              </span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('customers')}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
                 activeTab === 'customers'
@@ -628,7 +648,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setIsAddProductOpen(true)}
+                    onClick={() => setActiveTab('inventory')}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#d7ff3f] hover:bg-[#c9f530] text-[#111111] text-xs font-black rounded-full cursor-pointer shadow-xs transition-transform active:scale-95"
                   >
                     <Plus className="w-4 h-4" />
@@ -1171,177 +1191,24 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             </div>
           )}
 
-          {/* TAB 4: INVENTORY & CATALOGUE */}
+          {/* TAB 4: INVENTORY & CATALOGUE - PRODUCT MANAGEMENT SYSTEM */}
           {activeTab === 'inventory' && (
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                    Inventory & Product Catalogue
-                  </h1>
-                  <p className="text-xs text-stone-400 mt-1">
-                    Manage pricing, stock levels, variants, and product definitions across all 9 store categories.
-                  </p>
-                </div>
+            <ProductManagementTab
+              products={products}
+              suppliers={suppliers}
+              onUpdateProducts={onUpdateProducts}
+              onShowNotice={onShowNotice}
+              onOpenBulkImport={() => setActiveTab('bulk-import')}
+            />
+          )}
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsAddProductOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#d7ff3f] hover:bg-[#c9f530] text-[#111111] text-xs font-black rounded-full cursor-pointer shadow-xs"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>ADD PRODUCT</span>
-                  </button>
-                  <button
-                    onClick={handleExportCSV}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-full cursor-pointer transition-colors border border-stone-700"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Export CSV</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Search & Category Filter */}
-              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-[#141414] p-4 rounded-2xl border border-stone-800">
-                <div className="flex-1 max-w-md relative">
-                  <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    placeholder="Search product by name, SKU, color..."
-                    className="w-full bg-[#1c1c1c] border border-stone-700 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-stone-500 outline-hidden focus:border-[#d7ff3f]"
-                  />
-                </div>
-
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                  {['All', ...ALL_CATEGORIES.filter((c) => c !== 'All')].map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setProductCategoryFilter(cat)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer shrink-0 ${
-                        productCategoryFilter === cat
-                          ? 'bg-[#d7ff3f] text-[#111111]'
-                          : 'bg-stone-800 text-stone-400 hover:text-white'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Product Table */}
-              <div className="bg-[#141414] rounded-2xl border border-stone-800 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left">
-                    <thead className="bg-stone-900 text-stone-400 font-bold uppercase tracking-wider border-b border-stone-800">
-                      <tr>
-                        <th className="p-3.5">Item & SKU</th>
-                        <th className="p-3.5">Category</th>
-                        <th className="p-3.5">Audience</th>
-                        <th className="p-3.5">Supplying Company</th>
-                        <th className="p-3.5">Price (₹)</th>
-                        <th className="p-3.5">Stock</th>
-                        <th className="p-3.5">Tag</th>
-                        <th className="p-3.5 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-800 font-medium">
-                      {filteredProducts.map((p) => (
-                        <tr key={p.sku} className="hover:bg-stone-900/60 transition-colors">
-                          <td className="p-3.5 flex items-center gap-3">
-                            <div
-                              className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center shadow-xs"
-                              style={{ backgroundColor: p.color || '#171717' }}
-                            >
-                              <span className="text-[7px] font-black text-white/70 uppercase">OB</span>
-                            </div>
-                            <div>
-                              <strong className="text-white block font-extrabold line-clamp-1">{p.name}</strong>
-                              <span className="text-[10px] text-stone-500 font-mono">{p.sku}</span>
-                            </div>
-                          </td>
-                          <td className="p-3.5 text-stone-300 font-bold">{p.category}</td>
-                          <td className="p-3.5 text-stone-400">{p.audience || p.aud || 'Unisex'}</td>
-                          <td className="p-3.5">
-                            <select
-                              value={p.supplierId || ''}
-                              onChange={(e) => {
-                                const supId = e.target.value;
-                                const matched = suppliers.find((s) => s.id === supId);
-                                const updated = products.map((prod) =>
-                                  prod.sku === p.sku
-                                    ? {
-                                        ...prod,
-                                        supplierId: supId || undefined,
-                                        supplierName: matched ? matched.brandName : undefined,
-                                      }
-                                    : prod
-                                );
-                                onUpdateProducts(updated);
-                                onShowNotice(
-                                  matched
-                                    ? `Linked ${p.name} to ${matched.brandName}`
-                                    : `Set ${p.name} to In-House Atelier`
-                                );
-                              }}
-                              className="bg-stone-900 text-stone-300 border border-stone-700 hover:border-[#d7ff3f] rounded-lg px-2 py-1 text-[11px] font-semibold outline-hidden cursor-pointer max-w-[170px] truncate"
-                            >
-                              <option value="">OBRYNT Atelier (In-House)</option>
-                              {suppliers.map((s) => (
-                                <option key={s.id} value={s.id}>
-                                  {s.brandName}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="p-3.5">
-                            <div className="flex items-center gap-1">
-                              <span className="text-stone-400">₹</span>
-                              <input
-                                type="number"
-                                value={p.price}
-                                onChange={(e) => handleInlinePriceChange(p.sku, Number(e.target.value))}
-                                className="w-20 bg-stone-800 border border-stone-700 rounded px-1.5 py-1 text-xs text-white font-bold tabular-nums outline-hidden focus:border-[#d7ff3f]"
-                              />
-                            </div>
-                          </td>
-                          <td className="p-3.5">
-                            <div className="flex items-center gap-1.5">
-                              <input
-                                type="number"
-                                value={p.stock}
-                                onChange={(e) => handleInlineStockChange(p.sku, Number(e.target.value))}
-                                className="w-16 bg-stone-800 border border-stone-700 rounded px-1.5 py-1 text-xs text-white font-bold tabular-nums outline-hidden focus:border-[#d7ff3f]"
-                              />
-                              {p.stock < 30 && (
-                                <span className="text-[10px] text-amber-400 font-bold">Low</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="p-3.5">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-stone-800 text-[#d7ff3f] border border-stone-700">
-                              {p.tag || p.badge || 'STANDARD'}
-                            </span>
-                          </td>
-                          <td className="p-3.5 text-right">
-                            <button
-                              onClick={() => handleDeleteProduct(p.sku)}
-                              className="p-1.5 text-stone-500 hover:text-red-400 transition-colors cursor-pointer"
-                              title="Delete Product"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+          {/* TAB: SMART BULK PRODUCT IMPORT & AI AUTO-CATEGORISATION */}
+          {activeTab === 'bulk-import' && (
+            <BulkImportTab
+              products={products}
+              onUpdateProducts={onUpdateProducts}
+              onShowNotice={onShowNotice}
+            />
           )}
 
           {/* TAB 5: PROMOTIONS & BANNER */}

@@ -11,6 +11,7 @@ import {
   ALL_CATEGORIES,
 } from './types';
 import { loadProductsCatalogue, DEFAULT_PRODUCTS } from './services/csvService';
+import { loadUnifiedProductCatalogue } from './services/productService';
 import {
   getStoredOrders,
   saveOrderToStorage,
@@ -121,13 +122,20 @@ export default function App() {
   const [accountTab, setAccountTab] = useState<'orders' | 'transactions' | 'wishlist' | 'designs'>('orders');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load products on mount
+  // Load products on mount (Supabase + local cache + defaults)
   useEffect(() => {
     const fetchCatalog = async () => {
       setIsLoading(true);
-      const res = await loadProductsCatalogue();
-      setProducts(res.products);
-      setIsLoading(false);
+      try {
+        const res = await loadUnifiedProductCatalogue();
+        setProducts(res.products);
+      } catch (err) {
+        console.error('Failed to load catalogue, falling back to defaults:', err);
+        const res = await loadProductsCatalogue();
+        setProducts(res.products);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchCatalog();
   }, []);
@@ -370,25 +378,29 @@ export default function App() {
     showNotice(`Added "${product.name}" to your bag.`);
   };
 
-  // Add Custom Studio T-shirt to Cart
+  // Add Custom Studio Garment to Cart
   const handleAddCustomToCart = (design: CustomDesign) => {
     const itemKey = `custom-${Date.now()}`;
+    const garmentCategory = design.category || 'T-Shirt';
+    const garmentPrice = design.totalPrice || 998;
     const customProduct: Product = {
       sku: `OB-CUST-${Date.now().toString(36).toUpperCase()}`,
-      name: `Custom T-Shirt — ${design.text}`,
+      name: `Custom ${garmentCategory} — ${design.text || 'Bespoke Print'}`,
       category: 'Custom Design',
       cat: 'Custom Design',
-      audience: 'Unisex',
-      aud: 'Unisex',
-      price: 799,
+      audience: (design.gender || 'Unisex') as any,
+      aud: (design.gender || 'Unisex') as any,
+      price: garmentPrice,
+      originalPrice: garmentPrice + 300,
       sizes: [design.size],
       color: design.colorHex,
       colorName: design.colorName,
-      type: 'shirt',
-      tag: 'MAKE IT YOURS',
-      description: `Bespoke ${design.side} view print: "${design.text}" in ${design.colorName} 220 GSM combed cotton.`,
+      type: (garmentCategory.toLowerCase().includes('pant') ? 'pants' : garmentCategory.toLowerCase().includes('hoodie') ? 'hoodie' : 'shirt') as any,
+      tag: 'BESPOKE AI PRINT',
+      badge: 'CUSTOM',
+      description: `Bespoke ${garmentCategory} (${design.fit || 'Regular fit'}, ${design.sleeve || 'Half sleeve'}, ${design.neckline || 'Round neck'}): "${design.text || 'Custom Artwork'}" on ${design.colorName} combed fabric.`,
       stock: 999,
-      imageUrl: './images/product_tshirt_minimal_1793012315796.jpg',
+      imageUrl: design.artworkUrl || './images/product_tshirt_minimal_1793012315796.jpg',
     };
 
     setCart((prev) => [
@@ -512,8 +524,13 @@ export default function App() {
   const cartTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
   const scrollToStudio = () => {
-    const el = document.getElementById('design');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    setActiveCategory('Custom Design');
+    setTimeout(() => {
+      const el = document.getElementById('design');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
   };
 
   const scrollToShop = () => {

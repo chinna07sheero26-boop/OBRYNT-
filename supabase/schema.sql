@@ -253,3 +253,63 @@ create policy "Admins view audit logs"
 --   set encrypted_password = crypt('chinnasheero3026', gen_salt('bf'))
 --   where email = 'chinna07sheero.26@gmail.com';
 -- =========================================================================
+
+-- =========================================================================
+-- 10. PRODUCT MANAGEMENT SYSTEM & STORAGE MIGRATION
+-- =========================================================================
+-- Safe idempotent enhancements for products table
+alter table public.products add column if not exists brand text default 'OBRYNT';
+alter table public.products add column if not exists status text default 'active' check (status in ('active', 'draft', 'out_of_stock'));
+
+-- Ensure RLS allows public to view active products and admins to manage all
+drop policy if exists "Public can view published products" on public.products;
+create policy "Public can view active products"
+  on public.products for select
+  using (is_published = true and (status is null or status = 'active'));
+
+drop policy if exists "Admins can manage products" on public.products;
+create policy "Admins can manage products"
+  on public.products for all
+  using (public.is_admin_or_owner());
+
+-- Create Supabase Storage Bucket for Product Images
+insert into storage.buckets (id, name, public)
+values ('product-images', 'product-images', true)
+on conflict (id) do update set public = true;
+
+-- Storage RLS: Public read access
+drop policy if exists "Public can view product images" on storage.objects;
+create policy "Public can view product images"
+  on storage.objects for select
+  using (bucket_id = 'product-images');
+
+-- Storage RLS: Admin and authenticated management
+drop policy if exists "Admins can upload product images" on storage.objects;
+create policy "Admins can upload product images"
+  on storage.objects for insert
+  with check (bucket_id = 'product-images');
+
+drop policy if exists "Admins can update product images" on storage.objects;
+create policy "Admins can update product images"
+  on storage.objects for update
+  using (bucket_id = 'product-images');
+
+drop policy if exists "Admins can delete product images" on storage.objects;
+create policy "Admins can delete product images"
+  on storage.objects for delete
+  using (bucket_id = 'product-images');
+
+-- =========================================================================
+-- 11. SMART BULK PRODUCT IMPORT & AI AUTO-CATEGORISATION COLUMNS
+-- =========================================================================
+-- Safe idempotent column additions for AI categorization & duplicate detection
+alter table public.products add column if not exists subcategory text;
+alter table public.products add column if not exists confidence numeric default 100;
+alter table public.products add column if not exists needs_review boolean default false;
+alter table public.products add column if not exists supplier_product_id text;
+alter table public.products add column if not exists source_file text;
+
+create index if not exists idx_products_subcategory on public.products(subcategory);
+create index if not exists idx_products_needs_review on public.products(needs_review);
+create index if not exists idx_products_supplier_prod_id on public.products(supplier_product_id);
+-- =========================================================================
