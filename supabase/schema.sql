@@ -312,4 +312,120 @@ alter table public.products add column if not exists source_file text;
 create index if not exists idx_products_subcategory on public.products(subcategory);
 create index if not exists idx_products_needs_review on public.products(needs_review);
 create index if not exists idx_products_supplier_prod_id on public.products(supplier_product_id);
+
+-- =========================================================================
+-- 12. RESTRICTED DELIVERY COMPANY ACCESS & PRIVACY POLICIES
+-- =========================================================================
+
+-- Expand role check in profiles table if needed
+alter table public.profiles drop constraint if exists profiles_role_check;
+alter table public.profiles add constraint profiles_role_check
+  check (role in ('owner', 'admin', 'staff', 'supplier', 'customer', 'delivery'));
+
+-- Delivery Companies Registry
+create table if not exists public.delivery_companies (
+  id uuid default uuid_generate_v4() primary key,
+  company_name text not null,
+  authorized_email text not null unique,
+  contact_number text not null,
+  contact_person text,
+  access_code text not null,
+  status text not null default 'active' check (status in ('active', 'suspended', 'revoked')),
+  can_view_phone boolean default true,
+  can_view_address boolean default true,
+  can_update_status boolean default true,
+  notes text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Delivery Order Assignments (Isolated per company)
+-- Notice: PREPAID orders have product prices and totals excluded by RLS and application views
+create table if not exists public.delivery_assignments (
+  id uuid default uuid_generate_v4() primary key,
+  order_id uuid references public.orders(id) on delete cascade not null,
+  company_id uuid references public.delivery_companies(id) on delete cascade not null,
+  order_code text not null,
+  recipient_name text not null,
+  recipient_phone text not null,
+  delivery_address text not null,
+  city text not null,
+  state text not null,
+  pincode text not null,
+  is_cod boolean not null default false,
+  payment_method_type text not null check (payment_method_type in ('PREPAID', 'CASH ON DELIVERY')),
+  -- Strictly null for PREPAID orders! Only populated if is_cod = true
+  cod_amount_to_collect numeric,
+  status text not null default 'assigned' check (status in ('assigned', 'copied', 'in_transit', 'out_for_delivery', 'delivered', 'failed', 'returned')),
+  copied_at timestamp with time zone,
+  copied_by text,
+  dispatched_at timestamp with time zone,
+  delivered_at timestamp with time zone,
+  tracking_number text,
+  courier_partner text,
+  notes text,
+  assigned_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_delivery_asgn_company on public.delivery_assignments(company_id);
+create index if not exists idx_delivery_asgn_order on public.delivery_assignments(order_id);
+create index if not exists idx_delivery_asgn_status on public.delivery_assignments(status);
+
+-- Courier Activity & Privacy Audit Logs
+create table if not exists public.delivery_activity_logs (
+  id uuid default uuid_generate_v4() primary key,
+  company_id uuid references public.delivery_companies(id) on delete set null,
+  company_name text,
+  order_code text,
+  action text not null,
+  details text not null,
+  actor text not null check (actor in ('admin', 'delivery_agent')),
+  ip_address text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Row Level Security for Delivery
+alter table public.delivery_companies enable row level security;
+alter table public.delivery_assignments enable row level security;
+alter table public.delivery_activity_logs enable row level security;
+
+-- Admin policies
+drop policy if exists "Admins manage delivery companies" on public.delivery_companies;
+create policy "Admins manage delivery companies"
+  on public.delivery_companies for all
+  using (public.is_admin_or_owner());
+
+drop policy if exists "Admins manage delivery assignments" on public.delivery_assignments;
+create policy "Admins manage delivery assignments"
+  on public.delivery_assignments for all
+  using (public.is_admin_or_owner());
+
+drop policy if exists "Admins view delivery logs" on public.delivery_activity_logs;
+create policy "Admins view delivery logs"
+  on public.delivery_activity_logs for all
+  using (public.is_admin_or_owner());
+
+-- Delivery Company Isolated Policies
+-- A courier can ONLY view assignments allocated to its company ID and CANNOT view raw orders or financial ledgers!
+drop policy if exists "Couriers view own assigned orders" on public.delivery_assignments;
+create policy "Couriers view own assigned orders"
+  on public.delivery_assignments for select
+  using (
+    public.is_admin_or_owner() or
+    company_id in (
+      select id from public.delivery_companies
+      where authorized_email = auth.email() and status = 'active'
+    )
+  );
+
+drop policy if exists "Couriers update status on own assignments" on public.delivery_assignments;
+create policy "Couriers update status on own assignments"
+  on public.delivery_assignments for update
+  using (
+    public.is_admin_or_owner() or
+    company_id in (
+      select id from public.delivery_companies
+      where authorized_email = auth.email() and status = 'active'
+    )
+  );
 -- =========================================================================

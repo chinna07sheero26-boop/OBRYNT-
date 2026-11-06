@@ -9,6 +9,8 @@ interface FooterProps {
   onOpenOwnerDashboard?: () => void;
   isStaffAuthenticated?: boolean;
   onOpenStaffLogin?: () => void;
+  isDeliveryAuth?: boolean;
+  onOpenDeliveryLogin?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -19,6 +21,8 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenOwnerDashboard,
   isStaffAuthenticated = false,
   onOpenStaffLogin,
+  isDeliveryAuth = false,
+  onOpenDeliveryLogin,
 }) => {
   const currentYear = new Date().getFullYear();
 
@@ -164,6 +168,16 @@ export const Footer: React.FC<FooterProps> = ({
                 title="Staff Operations & Fulfillment Portal"
               >
                 {isStaffAuthenticated ? '• Staff Operations (Active)' : '• Staff Portal'}
+              </button>
+            )}
+
+            {onOpenDeliveryLogin && (
+              <button
+                onClick={onOpenDeliveryLogin}
+                className="text-[10px] text-stone-500 hover:text-amber-400 transition-colors cursor-pointer"
+                title="Restricted Courier & Delivery Partner Portal"
+              >
+                {isDeliveryAuth ? '• Courier Hub (Active)' : '• Courier Portal'}
               </button>
             )}
 

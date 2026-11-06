@@ -41,6 +41,7 @@ import {
   Category,
   Supplier,
   SupplierFulfilment,
+  DeliveryCompany,
 } from '../types';
 import { exportCatalogueToCSV } from '../services/csvService';
 import {
@@ -58,6 +59,7 @@ import { FinancialsTab } from './owner/FinancialsTab';
 import { SecurityAuditTab } from './owner/SecurityAuditTab';
 import { ProductManagementTab } from './owner/ProductManagementTab';
 import { BulkImportTab } from './owner/BulkImportTab';
+import { DeliveryManagementTab } from './owner/DeliveryManagementTab';
 
 interface OwnerDashboardProps {
   products: Product[];
@@ -73,6 +75,7 @@ interface OwnerDashboardProps {
   onCloseDashboard: () => void;
   onLogoutOwner?: () => void;
   onShowNotice: (msg: string) => void;
+  onOpenDeliveryPortal?: (company?: DeliveryCompany) => void;
 }
 
 export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
@@ -89,6 +92,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   onCloseDashboard,
   onLogoutOwner,
   onShowNotice,
+  onOpenDeliveryPortal,
 }) => {
   const [activeTab, setActiveTab] = useState<
     | 'overview'
@@ -103,6 +107,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     | 'fulfilments'
     | 'financials'
     | 'security'
+    | 'delivery'
   >('overview');
 
   // Supplier & Fulfilment State
@@ -613,6 +618,23 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                 <ShieldCheck className="w-4 h-4" />
                 <span>Cybersecurity & Vault</span>
               </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('delivery')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
+                activeTab === 'delivery'
+                  ? 'bg-[#d7ff3f] text-[#111111]'
+                  : 'text-stone-300 hover:bg-stone-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Truck className="w-4 h-4 text-[#d7ff3f] shrink-0" />
+                <span>Delivery Company Access</span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${activeTab === 'delivery' ? 'bg-black text-[#d7ff3f]' : 'bg-stone-800 text-stone-300'}`}>
+                Restricted
+              </span>
             </button>
           </nav>
 
@@ -1588,6 +1610,15 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
           {/* TAB 11: CYBERSECURITY & AUDIT VAULT */}
           {activeTab === 'security' && (
             <SecurityAuditTab onShowNotice={onShowNotice} />
+          )}
+
+          {/* TAB 12: RESTRICTED DELIVERY COMPANY MANAGEMENT */}
+          {activeTab === 'delivery' && (
+            <DeliveryManagementTab
+              orders={orders}
+              onShowNotice={onShowNotice}
+              onOpenDeliveryPortal={onOpenDeliveryPortal}
+            />
           )}
         </main>
       </div>

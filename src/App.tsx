@@ -58,6 +58,15 @@ import {
   clearStaffSession,
   StaffSession,
 } from './services/staffAuthService';
+import { DeliveryDashboard } from './components/DeliveryDashboard';
+import { DeliveryLoginModal } from './components/DeliveryLoginModal';
+import {
+  getDeliverySession,
+  clearDeliverySession,
+  isDeliveryAuthenticated,
+  authenticateDeliveryLogin,
+} from './services/deliveryService';
+import { DeliveryCompany, DeliverySession } from './types';
 import { Newsletter } from './components/Newsletter';
 import { Footer } from './components/Footer';
 import { ArrowUpDown, ShieldCheck, Sparkles, SlidersHorizontal, Check, LogOut } from 'lucide-react';
@@ -82,6 +91,13 @@ export default function App() {
   const [isStaffAuth, setIsStaffAuth] = useState<boolean>(() => isStaffAuthenticated());
   const [isStaffDashboardOpen, setIsStaffDashboardOpen] = useState<boolean>(false);
   const [isStaffLoginOpen, setIsStaffLoginOpen] = useState<boolean>(false);
+
+  // Restricted Delivery Company Portal State
+  const [deliverySession, setDeliverySession] = useState<DeliverySession | null>(() => getDeliverySession());
+  const [isDeliveryPortalOpen, setIsDeliveryPortalOpen] = useState<boolean>(() => Boolean(getDeliverySession()));
+  const [isDeliveryLoginOpen, setIsDeliveryLoginOpen] = useState<boolean>(false);
+  const [defaultDeliveryEmail, setDefaultDeliveryEmail] = useState<string>('');
+  const [defaultDeliveryCode, setDefaultDeliveryCode] = useState<string>('');
 
   // Filter State
   const [activeCategory, setActiveCategory] = useState<string>('All');
@@ -227,6 +243,27 @@ export default function App() {
             }
           }
         }
+
+        // 3. Check Delivery Company Route
+        const isDeliveryRequested =
+          pathname === '/delivery' ||
+          pathname.startsWith('/delivery') ||
+          search.includes('delivery=true') ||
+          hash === '#delivery';
+
+        if (isDeliveryRequested) {
+          const curSession = getDeliverySession();
+          if (curSession) {
+            if (isMounted) {
+              setDeliverySession(curSession);
+              setIsDeliveryPortalOpen(true);
+            }
+          } else {
+            if (isMounted) {
+              setIsDeliveryLoginOpen(true);
+            }
+          }
+        }
       } catch (err) {
         console.error('Error verifying portal routes:', err);
       }
@@ -262,6 +299,17 @@ export default function App() {
           setIsStaffDashboardOpen((prev) => !prev);
         } else {
           setIsStaffLoginOpen(true);
+        }
+      }
+
+      // Ctrl + Shift + D: Delivery Partner Portal
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        const curSession = getDeliverySession();
+        if (curSession) {
+          setIsDeliveryPortalOpen((prev) => !prev);
+        } else {
+          setIsDeliveryLoginOpen(true);
         }
       }
     };
@@ -327,6 +375,48 @@ export default function App() {
       setIsStaffDashboardOpen(true);
     } else {
       setIsStaffLoginOpen(true);
+    }
+  };
+
+  // Delivery Company Portal Handlers
+  const handleDeliveryLoginSuccess = (session: DeliverySession) => {
+    setDeliverySession(session);
+    setIsDeliveryPortalOpen(true);
+    showNotice(`Delivery Partner authenticated: ${session.companyName}`);
+  };
+
+  const handleLogoutDelivery = () => {
+    clearDeliverySession();
+    setDeliverySession(null);
+    setIsDeliveryPortalOpen(false);
+    try {
+      if (window.location.pathname.startsWith('/delivery') || window.location.hash.includes('delivery')) {
+        window.history.replaceState({}, '', '/');
+      }
+    } catch {}
+    showNotice('Logged out of Delivery Portal.');
+  };
+
+  const handleTriggerDeliveryAccess = (company?: DeliveryCompany) => {
+    if (company) {
+      const auth = authenticateDeliveryLogin(company.authorizedEmail, company.accessCode);
+      if (auth.success && auth.session) {
+        setDeliverySession(auth.session);
+        setIsDeliveryPortalOpen(true);
+        showNotice(`Opening Restricted Dashboard for "${company.companyName}"`);
+        return;
+      } else {
+        setDefaultDeliveryEmail(company.authorizedEmail);
+        setDefaultDeliveryCode(company.accessCode);
+      }
+    }
+
+    const cur = getDeliverySession();
+    if (cur) {
+      setDeliverySession(cur);
+      setIsDeliveryPortalOpen(true);
+    } else {
+      setIsDeliveryLoginOpen(true);
     }
   };
 
@@ -570,6 +660,7 @@ export default function App() {
         onCloseDashboard={() => setIsOwnerDashboardOpen(false)}
         onLogoutOwner={handleLogoutOwner}
         onShowNotice={showNotice}
+        onOpenDeliveryPortal={handleTriggerDeliveryAccess}
       />
     );
   }
@@ -585,6 +676,18 @@ export default function App() {
         onCloseStaffDashboard={() => setIsStaffDashboardOpen(false)}
         onLogoutStaff={handleLogoutStaff}
         onShowNotice={showNotice}
+      />
+    );
+  }
+
+  // If the Delivery Partner Dashboard is active, show the Restricted Courier Dashboard
+  if (isDeliveryPortalOpen && deliverySession) {
+    return (
+      <DeliveryDashboard
+        session={deliverySession}
+        onLogout={handleLogoutDelivery}
+        onShowNotice={showNotice}
+        onBackToStorefront={() => setIsDeliveryPortalOpen(false)}
       />
     );
   }
@@ -826,6 +929,8 @@ export default function App() {
         onOpenOwnerDashboard={handleTriggerOwnerAccess}
         isStaffAuthenticated={isStaffAuth}
         onOpenStaffLogin={handleTriggerStaffAccess}
+        isDeliveryAuth={Boolean(deliverySession)}
+        onOpenDeliveryLogin={() => handleTriggerDeliveryAccess()}
       />
 
       {/* Floating Toast Notification */}
@@ -910,6 +1015,16 @@ export default function App() {
         onClose={() => setIsStaffLoginOpen(false)}
         onSuccess={handleStaffLoginSuccess}
         onShowNotice={showNotice}
+      />
+
+      {/* Restricted Delivery Company Login Gateway */}
+      <DeliveryLoginModal
+        isOpen={isDeliveryLoginOpen}
+        onClose={() => setIsDeliveryLoginOpen(false)}
+        onLoginSuccess={handleDeliveryLoginSuccess}
+        onShowNotice={showNotice}
+        defaultEmail={defaultDeliveryEmail}
+        defaultAccessCode={defaultDeliveryCode}
       />
     </div>
   );

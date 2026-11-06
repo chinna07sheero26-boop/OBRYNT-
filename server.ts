@@ -960,6 +960,85 @@ app.post('/api/ai/generate-clothing-artwork', async (req: Request, res: Response
 });
 
 // =========================================================================
+// RESTRICTED DELIVERY COMPANY API ENDPOINTS
+// =========================================================================
+interface ServerDeliveryCompany {
+  id: string;
+  name: string;
+  email: string;
+  accessCode: string;
+  status: 'active' | 'suspended' | 'revoked';
+}
+
+// In-memory server company lookup
+const serverDeliveryCompanies: ServerDeliveryCompany[] = [
+  {
+    id: 'del-company-bluedart',
+    name: 'Blue Dart Express (Surface & Air)',
+    email: 'dispatch@bluedart-express.in',
+    accessCode: 'DEL-BLUEDART-8891',
+    status: 'active',
+  },
+  {
+    id: 'del-company-delhivery',
+    name: 'Delhivery Surface Logistics',
+    email: 'ops.support@delhivery-logistics.com',
+    accessCode: 'DEL-DELHIVERY-4420',
+    status: 'active',
+  },
+  {
+    id: 'del-company-shadowfax',
+    name: 'Shadowfax Hyperlocal Fleet',
+    email: 'riders@shadowfax-network.in',
+    accessCode: 'DEL-SHADOWFAX-2099',
+    status: 'active',
+  },
+];
+
+// Delivery login
+app.post('/api/delivery/login', (req: Request, res: Response) => {
+  const { email, accessCode } = req.body || {};
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanCode = (accessCode || '').trim();
+
+  const matched = serverDeliveryCompanies.find((c) => c.email.toLowerCase() === cleanEmail);
+  if (!matched) {
+    res.status(401).json({ success: false, error: 'Invalid delivery company credentials.' });
+    return;
+  }
+
+  if (matched.status !== 'active') {
+    res.status(403).json({ success: false, error: `Delivery access is ${matched.status.toUpperCase()}. Contact OBRYNT admin.` });
+    return;
+  }
+
+  if (matched.accessCode !== cleanCode) {
+    res.status(401).json({ success: false, error: 'Incorrect courier access key.' });
+    return;
+  }
+
+  const token = `del-srv-${Date.now().toString(36)}-${crypto.randomBytes(8).toString('hex')}`;
+  res.json({
+    success: true,
+    session: {
+      companyId: matched.id,
+      companyName: matched.name,
+      authorizedEmail: matched.email,
+      role: 'delivery',
+      token,
+      expiresAt: Date.now() + 12 * 60 * 60 * 1000,
+    },
+  });
+});
+
+// Courier audit log endpoint
+app.post('/api/delivery/copy-log', (req: Request, res: Response) => {
+  const { orderId, field, companyName } = req.body || {};
+  console.log(`[OBRYNT Delivery Audit] ${companyName || 'Courier'} copied ${field || 'details'} for order ${orderId} at ${new Date().toISOString()}`);
+  res.json({ success: true, loggedAt: new Date().toISOString() });
+});
+
+// =========================================================================
 // VITE / STATIC SERVING
 // =========================================================================
 async function bootstrap() {

@@ -314,3 +314,88 @@ export interface FinancialBreakdown {
   pendingCodRemittances: number;
 }
 
+// =========================================================================
+// RESTRICTED DELIVERY COMPANY ACCESS TYPES
+// =========================================================================
+
+export interface DeliveryCompany {
+  id: string;
+  companyName: string;
+  authorizedEmail: string;
+  contactNumber: string;
+  contactPerson?: string;
+  accessCode: string; // Dedicated access key for courier dispatch team
+  status: 'active' | 'suspended' | 'revoked';
+  permissions: {
+    canViewCustomerPhone: boolean;
+    canViewAddress: boolean;
+    canUpdateStatus: boolean;
+  };
+  notes?: string;
+  createdAt: string;
+  lastActiveAt?: string;
+  assignedOrdersCount?: number;
+}
+
+export interface DeliveryOrderSnapshot {
+  orderId: string;
+  date: string;
+  customerName: string;
+  customerPhone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  isCod: boolean;
+  paymentMethodType: 'PREPAID' | 'CASH ON DELIVERY';
+  // Strict Privacy: populated ONLY if isCod === true
+  codAmountToCollect?: number;
+}
+
+export interface DeliveryAssignment {
+  id: string;
+  orderId: string;
+  companyId: string;
+  companyName: string;
+  assignedAt: string;
+  status: 'assigned' | 'copied' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | 'returned';
+  copiedAt?: string;
+  copiedBy?: string;
+  dispatchedAt?: string;
+  deliveredAt?: string;
+  trackingNumber?: string;
+  courierPartner?: string;
+  notes?: string;
+  orderSnapshot: DeliveryOrderSnapshot;
+}
+
+export interface DeliveryActivityLog {
+  id: string;
+  companyId?: string;
+  companyName?: string;
+  orderId?: string;
+  action:
+    | 'created_company'
+    | 'status_changed'
+    | 'order_assigned'
+    | 'details_copied'
+    | 'delivery_updated'
+    | 'login_success'
+    | 'login_failed'
+    | 'access_revoked';
+  details: string;
+  timestamp: string;
+  actor: 'admin' | 'delivery_agent';
+  ip?: string;
+}
+
+export interface DeliverySession {
+  companyId: string;
+  companyName: string;
+  authorizedEmail: string;
+  role: 'delivery';
+  token: string;
+  expiresAt: number;
+}
+
+
