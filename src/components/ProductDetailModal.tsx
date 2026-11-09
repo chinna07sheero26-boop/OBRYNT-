@@ -10,6 +10,7 @@ import {
   Star,
   Sparkles,
 } from 'lucide-react';
+import { ObryntAuthenticitySeal, OBRYNT_EMBLEM_SRC } from './ObryntBrand';
 import { Product, ProductReview } from '../types';
 import { getStoredReviews, saveReview, getProductRatingData } from '../services/reviewService';
 
@@ -96,11 +97,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       >
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-[#e4e1da] flex items-center justify-between bg-stone-50/70">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#d7ff3f] text-[#111111]">
-              {product.tag || product.badge || 'OBRYNT ORIGINAL'}
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-full overflow-hidden border border-stone-600 bg-black shrink-0">
+              <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-stone-900 text-stone-200 border border-stone-700">
+              {product.tag || product.badge || 'OBRYNT OFFICIAL'}
             </span>
-            <span className="text-xs text-stone-500 font-bold">
+            <span className="text-xs text-stone-500 font-bold hidden sm:inline">
               {product.audience || product.aud || 'Unisex'} · {product.category || product.cat}
             </span>
           </div>
@@ -322,6 +326,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <span>{pincodeResult}</span>
                 </p>
               )}
+            </div>
+
+            {/* Official Brand Authenticity Seal */}
+            <div className="pt-2">
+              <ObryntAuthenticitySeal />
             </div>
           </div>
         </div>

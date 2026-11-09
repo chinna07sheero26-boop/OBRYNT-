@@ -29,6 +29,7 @@ import {
   Building2,
   PackageCheck,
   ShieldCheck,
+  Factory,
 } from 'lucide-react';
 import {
   Product,
@@ -42,6 +43,8 @@ import {
   Supplier,
   SupplierFulfilment,
   DeliveryCompany,
+  CompanyAccount,
+  FactoryPartner,
 } from '../types';
 import { exportCatalogueToCSV } from '../services/csvService';
 import {
@@ -60,6 +63,9 @@ import { SecurityAuditTab } from './owner/SecurityAuditTab';
 import { ProductManagementTab } from './owner/ProductManagementTab';
 import { BulkImportTab } from './owner/BulkImportTab';
 import { DeliveryManagementTab } from './owner/DeliveryManagementTab';
+import { CompanyManagementTab } from './owner/CompanyManagementTab';
+import { FactoryPartnersTab } from './owner/FactoryPartnersTab';
+import { OBRYNT_EMBLEM_SRC, OBRYNT_LOGO_SRC } from './ObryntBrand';
 
 interface OwnerDashboardProps {
   products: Product[];
@@ -76,6 +82,8 @@ interface OwnerDashboardProps {
   onLogoutOwner?: () => void;
   onShowNotice: (msg: string) => void;
   onOpenDeliveryPortal?: (company?: DeliveryCompany) => void;
+  onOpenCompanyPortal?: (company: CompanyAccount) => void;
+  onOpenFactoryPortal?: (token: string) => void;
 }
 
 export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
@@ -93,6 +101,8 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   onLogoutOwner,
   onShowNotice,
   onOpenDeliveryPortal,
+  onOpenCompanyPortal,
+  onOpenFactoryPortal,
 }) => {
   const [activeTab, setActiveTab] = useState<
     | 'overview'
@@ -108,6 +118,8 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     | 'financials'
     | 'security'
     | 'delivery'
+    | 'companies'
+    | 'factories'
   >('overview');
 
   // Supplier & Fulfilment State
@@ -377,12 +389,12 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       {/* Top Merchant Appbar */}
       <header className="sticky top-0 z-40 bg-[#141414] border-b border-stone-800 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#d7ff3f] text-[#111111] flex items-center justify-center font-black text-sm">
-            OS
+          <div className="w-9 h-9 rounded-full overflow-hidden border border-stone-700 bg-black shadow-md shrink-0">
+            <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-base font-black tracking-wider text-white">
+              <span className="text-base font-black font-serif tracking-[0.16em] text-white">
                 OBRYNT MERCHANT OS
               </span>
               <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-800">
@@ -390,7 +402,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-stone-400 font-medium hidden sm:block">
-              Owner Management & Fulfillment Console
+              Owner Management & Fulfillment Console · Black, Platinum Silver & White
             </p>
           </div>
         </div>
@@ -634,6 +646,40 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               </div>
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${activeTab === 'delivery' ? 'bg-black text-[#d7ff3f]' : 'bg-stone-800 text-stone-300'}`}>
                 Restricted
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('companies')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
+                activeTab === 'companies'
+                  ? 'bg-[#d7ff3f] text-[#111111]'
+                  : 'text-stone-300 hover:bg-stone-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Building2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>Company Management</span>
+              </div>
+              <span className={`text-[9px] px-1.5 py-0.2 rounded font-black uppercase ${activeTab === 'companies' ? 'bg-black text-[#d7ff3f]' : 'bg-cyan-950 text-cyan-300 border border-cyan-800'}`}>
+                Staff
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('factories')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
+                activeTab === 'factories'
+                  ? 'bg-[#d7ff3f] text-[#111111]'
+                  : 'text-stone-300 hover:bg-stone-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Factory className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Factory Partners</span>
+              </div>
+              <span className={`text-[9px] px-1.5 py-0.2 rounded font-black uppercase ${activeTab === 'factories' ? 'bg-black text-[#d7ff3f]' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'}`}>
+                Mills
               </span>
             </button>
           </nav>
@@ -1571,6 +1617,99 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                   </button>
                 </div>
               </form>
+
+              {/* Official OBRYNT Brand Identity & Digital Assets Standard */}
+              <div className="p-6 rounded-2xl bg-[#141414] border border-stone-800 space-y-6">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-stone-700 bg-black shrink-0">
+                      <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-black text-white font-serif tracking-wider">
+                        Official OBRYNT Brand Identity Standards
+                      </h2>
+                      <p className="text-xs text-stone-400">
+                        Brand rules: Black, Platinum Silver and White · Exact Silver Emblem
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href={OBRYNT_LOGO_SRC}
+                    download="OBRYNT-Master-Emblem.jpg"
+                    className="px-3.5 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-xs font-bold text-stone-200 border border-stone-700 cursor-pointer"
+                  >
+                    Download Master Emblem
+                  </a>
+                </div>
+
+                {/* Email Templates & Order Notifications Preview */}
+                <div className="space-y-3">
+                  <div className="text-xs font-black uppercase tracking-wider text-stone-300 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-stone-400" />
+                    <span>Customer Email Template: Order Dispatch & Fulfillment Notice</span>
+                  </div>
+                  <div className="rounded-xl border border-stone-800 bg-black p-5 text-stone-300 font-sans text-xs space-y-3">
+                    <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full overflow-hidden border border-stone-700 bg-black">
+                          <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="font-serif font-black tracking-widest text-white text-sm">OBRYNT</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">
+                        noreply@obrynt.example
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <strong className="text-white text-sm block">Your OBRYNT order is on its way.</strong>
+                      <p className="text-stone-400 text-xs leading-relaxed">
+                        Dear Aarav, your tailored items from the OBRYNT Atelier have been verified, packaged with our official silver seal, and handed to dispatch.
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-stone-900 border border-stone-800 flex justify-between items-center text-xs">
+                      <div>
+                        <div className="text-stone-500 text-[10px] uppercase font-bold">Estimated Delivery</div>
+                        <div className="text-white font-bold">3 Business Days · Safe Insured Courier</div>
+                      </div>
+                      <span className="px-2 py-1 rounded bg-stone-800 text-stone-200 font-mono text-[10px]">
+                        TRACK-OB-9382
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-stone-500 pt-1 text-center border-t border-stone-900">
+                      OBRYNT ATELIER · WEAR YOUR IDENTITY · TIMELESS STYLE
+                    </div>
+                  </div>
+                </div>
+
+                {/* Packaging & Digital Materials */}
+                <div className="space-y-3 pt-2">
+                  <div className="text-xs font-black uppercase tracking-wider text-stone-300 flex items-center gap-2">
+                    <Package className="w-4 h-4 text-stone-400" />
+                    <span>Standardized Brand Packaging Materials</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="p-3 rounded-xl bg-stone-900 border border-stone-800">
+                      <strong className="text-white block font-bold mb-1">Rigid Box & Garment Sleeve</strong>
+                      <p className="text-stone-400 text-[11px] leading-relaxed">
+                        Matte carbon black with hot-stamped platinum silver emblem on lid.
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-stone-900 border border-stone-800">
+                      <strong className="text-white block font-bold mb-1">Damask Woven Brand Tag</strong>
+                      <p className="text-stone-400 text-[11px] leading-relaxed">
+                        100D dense weave with metallic silver thread and serialized batch code.
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-stone-900 border border-stone-800">
+                      <strong className="text-white block font-bold mb-1">Authenticity Certificate</strong>
+                      <p className="text-stone-400 text-[11px] leading-relaxed">
+                        Tamper-evident holographic silver seal with order validation signature.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1618,6 +1757,25 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               orders={orders}
               onShowNotice={onShowNotice}
               onOpenDeliveryPortal={onOpenDeliveryPortal}
+            />
+          )}
+
+          {/* TAB 13: COMPANY MANAGEMENT (Staff Fulfillment Network) */}
+          {activeTab === 'companies' && (
+            <CompanyManagementTab
+              products={products}
+              orders={orders}
+              onShowNotice={onShowNotice}
+              onOpenCompanyPortal={onOpenCompanyPortal}
+            />
+          )}
+
+          {/* TAB 14: FACTORY PARTNERS & PRODUCTION SOURCING */}
+          {activeTab === 'factories' && (
+            <FactoryPartnersTab
+              onShowNotice={onShowNotice}
+              onProductPublished={(newProd) => onUpdateProducts([newProd, ...products])}
+              onOpenFactoryPortal={onOpenFactoryPortal}
             />
           )}
         </main>

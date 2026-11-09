@@ -87,6 +87,8 @@ export function getSupabaseClient(): SupabaseClient | null {
   }
 }
 
+export const supabase = getSupabaseClient();
+
 export function saveCustomSupabaseConfig(url: string, anonKey: string): void {
   try {
     localStorage.setItem(STORAGE_KEYS.SUPABASE_URL, url.trim());

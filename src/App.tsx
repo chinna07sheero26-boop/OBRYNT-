@@ -67,8 +67,22 @@ import {
   authenticateDeliveryLogin,
 } from './services/deliveryService';
 import { DeliveryCompany, DeliverySession } from './types';
+import { CompanyDashboard } from './components/CompanyDashboard';
+import { CompanyStaffLoginModal } from './components/CompanyStaffLoginModal';
+import {
+  getCompanyStaffSession,
+  clearCompanyStaffSession,
+} from './services/companyService';
+import { FactoryDashboard } from './components/FactoryDashboard';
+import { FactoryPortalModal } from './components/FactoryPortalModal';
+import {
+  getFactorySession,
+  clearFactorySession,
+} from './services/factoryService';
+import { CompanyAccount, CompanyStaffSession, FactoryPartner, FactorySession } from './types';
 import { Newsletter } from './components/Newsletter';
 import { Footer } from './components/Footer';
+import { ObryntWatermark, ObryntBrandMaterialsModal } from './components/ObryntBrand';
 import { ArrowUpDown, ShieldCheck, Sparkles, SlidersHorizontal, Check, LogOut } from 'lucide-react';
 
 export default function App() {
@@ -98,6 +112,23 @@ export default function App() {
   const [isDeliveryLoginOpen, setIsDeliveryLoginOpen] = useState<boolean>(false);
   const [defaultDeliveryEmail, setDefaultDeliveryEmail] = useState<string>('');
   const [defaultDeliveryCode, setDefaultDeliveryCode] = useState<string>('');
+
+  // Company Staff Fulfillment Portal State (Zero-dropdown, password based)
+  const [companyStaffSession, setCompanyStaffSession] = useState<CompanyStaffSession | null>(() =>
+    getCompanyStaffSession()
+  );
+  const [isCompanyDashboardOpen, setIsCompanyDashboardOpen] = useState<boolean>(() =>
+    Boolean(getCompanyStaffSession())
+  );
+  const [isCompanyLoginOpen, setIsCompanyLoginOpen] = useState<boolean>(false);
+
+  // Factory Partner Sourcing Portal State
+  const [factorySession, setFactorySession] = useState<FactorySession | null>(() => getFactorySession());
+  const [isFactoryDashboardOpen, setIsFactoryDashboardOpen] = useState<boolean>(() =>
+    Boolean(getFactorySession())
+  );
+  const [isFactoryModalOpen, setIsFactoryModalOpen] = useState<boolean>(false);
+  const [factoryModalToken, setFactoryModalToken] = useState<string>('');
 
   // Filter State
   const [activeCategory, setActiveCategory] = useState<string>('All');
@@ -137,6 +168,7 @@ export default function App() {
   const [isAccountOpen, setIsAccountOpen] = useState<boolean>(false);
   const [accountTab, setAccountTab] = useState<'orders' | 'transactions' | 'wishlist' | 'designs'>('orders');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isBrandMaterialsOpen, setIsBrandMaterialsOpen] = useState<boolean>(false);
 
   // Load products on mount (Supabase + local cache + defaults)
   useEffect(() => {
@@ -228,18 +260,22 @@ export default function App() {
           }
         }
 
-        // 2. Check Staff Route
+        // 2. Check Company Staff Route
         if (isStaffRequested) {
-          if (isStaffAuthenticated()) {
+          const curCompanySession = getCompanyStaffSession();
+          if (curCompanySession) {
+            if (isMounted) {
+              setCompanyStaffSession(curCompanySession);
+              setIsCompanyDashboardOpen(true);
+            }
+          } else if (isStaffAuthenticated()) {
             if (isMounted) {
               setIsStaffAuth(true);
               setIsStaffDashboardOpen(true);
             }
           } else {
             if (isMounted) {
-              setIsStaffAuth(false);
-              setIsStaffDashboardOpen(false);
-              setIsStaffLoginOpen(true);
+              setIsCompanyLoginOpen(true);
             }
           }
         }
@@ -261,6 +297,33 @@ export default function App() {
           } else {
             if (isMounted) {
               setIsDeliveryLoginOpen(true);
+            }
+          }
+        }
+
+        // 4. Check Factory Partner Portal Route
+        const isFactoryRequested =
+          pathname === '/factory' ||
+          pathname.startsWith('/factory') ||
+          search.includes('factory_portal=true') ||
+          search.includes('token=FAC-') ||
+          hash === '#factory';
+
+        if (isFactoryRequested) {
+          const urlParams = new URLSearchParams(search);
+          const tokenParam = urlParams.get('token') || '';
+          if (tokenParam && isMounted) {
+            setFactoryModalToken(tokenParam);
+          }
+          const curFacSession = getFactorySession();
+          if (curFacSession) {
+            if (isMounted) {
+              setFactorySession(curFacSession);
+              setIsFactoryDashboardOpen(true);
+            }
+          } else {
+            if (isMounted) {
+              setIsFactoryModalOpen(true);
             }
           }
         }
@@ -371,11 +434,70 @@ export default function App() {
   };
 
   const handleTriggerStaffAccess = () => {
-    if (isStaffAuth || isStaffAuthenticated()) {
-      setIsStaffDashboardOpen(true);
+    if (companyStaffSession || getCompanyStaffSession()) {
+      setIsCompanyDashboardOpen(true);
     } else {
-      setIsStaffLoginOpen(true);
+      setIsCompanyLoginOpen(true);
     }
+  };
+
+  // Company Staff Fulfillment Handlers
+  const handleCompanyLoginSuccess = (company: CompanyAccount, session: CompanyStaffSession) => {
+    setCompanyStaffSession(session);
+    setIsCompanyDashboardOpen(true);
+    showNotice(`Staff authenticated · ${company.name} fulfillment console active`);
+  };
+
+  const handleLogoutCompanyStaff = () => {
+    clearCompanyStaffSession();
+    setCompanyStaffSession(null);
+    setIsCompanyDashboardOpen(false);
+    try {
+      if (window.location.pathname.startsWith('/staff') || window.location.hash.includes('staff')) {
+        window.history.replaceState({}, '', '/');
+      }
+    } catch {}
+    showNotice('Logged out of Company Fulfillment Console.');
+  };
+
+  // Factory Partner Sourcing Handlers
+  const handleFactoryLoginSuccess = (factory: FactoryPartner, session: FactorySession) => {
+    setFactorySession(session);
+    setIsFactoryDashboardOpen(true);
+    showNotice(`Factory authenticated · ${factory.name} sourcing portal active`);
+  };
+
+  const handleLogoutFactory = () => {
+    clearFactorySession();
+    setFactorySession(null);
+    setIsFactoryDashboardOpen(false);
+    try {
+      if (
+        window.location.pathname.startsWith('/factory') ||
+        window.location.search.includes('factory_portal')
+      ) {
+        window.history.replaceState({}, '', '/');
+      }
+    } catch {}
+    showNotice('Logged out of Factory Portal.');
+  };
+
+  const handleOpenCompanyPortal = (company: CompanyAccount) => {
+    const previewSession: CompanyStaffSession = {
+      companyId: company.id,
+      companyName: company.name,
+      role: 'company_staff',
+      token: `PREVIEW-${company.id}`,
+      expiresAt: Date.now() + 1000 * 60 * 60 * 4,
+      authenticatedAt: new Date().toISOString(),
+    };
+    setCompanyStaffSession(previewSession);
+    setIsCompanyDashboardOpen(true);
+  };
+
+  const handleLaunchFactoryPortal = (token: string) => {
+    setFactoryModalToken(token);
+    setIsFactoryModalOpen(true);
   };
 
   // Delivery Company Portal Handlers
@@ -661,6 +783,30 @@ export default function App() {
         onLogoutOwner={handleLogoutOwner}
         onShowNotice={showNotice}
         onOpenDeliveryPortal={handleTriggerDeliveryAccess}
+        onOpenCompanyPortal={handleOpenCompanyPortal}
+        onOpenFactoryPortal={handleLaunchFactoryPortal}
+      />
+    );
+  }
+
+  // If Company Staff Dashboard is active, show the isolated Company Fulfillment Console
+  if (isCompanyDashboardOpen && companyStaffSession) {
+    return (
+      <CompanyDashboard
+        session={companyStaffSession}
+        onLogout={handleLogoutCompanyStaff}
+        onShowNotice={showNotice}
+      />
+    );
+  }
+
+  // If Factory Partner Dashboard is active, show the Factory Sourcing Portal
+  if (isFactoryDashboardOpen && factorySession) {
+    return (
+      <FactoryDashboard
+        session={factorySession}
+        onLogout={handleLogoutFactory}
+        onShowNotice={showNotice}
       />
     );
   }
@@ -693,7 +839,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f6f2] text-[#111111] flex flex-col font-sans selection:bg-[#111111] selection:text-[#d7ff3f]">
+    <div className="min-h-screen bg-[#f7f6f2] text-[#111111] flex flex-col font-sans relative selection:bg-[#111111] selection:text-[#d7ff3f]">
+      {/* Subtle OBRYNT Background Watermark */}
+      <ObryntWatermark />
+
       {/* Top Navbar */}
       <Navbar
         cartCount={cart.reduce((s, x) => s + x.quantity, 0)}
@@ -754,6 +903,7 @@ export default function App() {
         <HeroBanner
           onExploreClick={scrollToShop}
           onCustomStudioClick={scrollToStudio}
+          onOpenBrandAssets={() => setIsBrandMaterialsOpen(true)}
         />
 
         {/* Professional Trust Guarantees */}
@@ -927,10 +1077,11 @@ export default function App() {
         onScrollToStudio={scrollToStudio}
         isOwnerAuthenticated={isOwnerAuthenticated}
         onOpenOwnerDashboard={handleTriggerOwnerAccess}
-        isStaffAuthenticated={isStaffAuth}
+        isStaffAuthenticated={Boolean(companyStaffSession)}
         onOpenStaffLogin={handleTriggerStaffAccess}
         isDeliveryAuth={Boolean(deliverySession)}
         onOpenDeliveryLogin={() => handleTriggerDeliveryAccess()}
+        onOpenBrandAssets={() => setIsBrandMaterialsOpen(true)}
       />
 
       {/* Floating Toast Notification */}
@@ -1017,6 +1168,23 @@ export default function App() {
         onShowNotice={showNotice}
       />
 
+      {/* Zero-Dropdown Company Staff Fulfillment Login Gateway */}
+      <CompanyStaffLoginModal
+        isOpen={isCompanyLoginOpen}
+        onClose={() => setIsCompanyLoginOpen(false)}
+        onSuccess={handleCompanyLoginSuccess}
+        onShowNotice={showNotice}
+      />
+
+      {/* Factory Partner Sourcing Portal Modal */}
+      <FactoryPortalModal
+        isOpen={isFactoryModalOpen}
+        initialToken={factoryModalToken}
+        onClose={() => setIsFactoryModalOpen(false)}
+        onSuccess={handleFactoryLoginSuccess}
+        onShowNotice={showNotice}
+      />
+
       {/* Restricted Delivery Company Login Gateway */}
       <DeliveryLoginModal
         isOpen={isDeliveryLoginOpen}
@@ -1025,6 +1193,13 @@ export default function App() {
         onShowNotice={showNotice}
         defaultEmail={defaultDeliveryEmail}
         defaultAccessCode={defaultDeliveryCode}
+      />
+
+      {/* Official OBRYNT Brand Identity & Packaging Asset Kit Modal */}
+      <ObryntBrandMaterialsModal
+        isOpen={isBrandMaterialsOpen}
+        onClose={() => setIsBrandMaterialsOpen(false)}
+        onShowNotice={showNotice}
       />
     </div>
   );

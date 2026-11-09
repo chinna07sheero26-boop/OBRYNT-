@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Printer, Download, CheckCircle2 } from 'lucide-react';
 import { OrderDetails, StoreSettings } from '../types';
+import { OBRYNT_EMBLEM_SRC, OBRYNT_LOGO_SRC } from './ObryntBrand';
 
 interface InvoiceModalProps {
   order: OrderDetails | null;
@@ -51,19 +52,29 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, onClose, sett
         </div>
 
         {/* Printable Invoice Sheet */}
-        <div className="p-6 sm:p-10 overflow-y-auto space-y-6 font-sans text-stone-800">
+        <div className="p-6 sm:p-10 overflow-y-auto space-y-6 font-sans text-stone-800 relative">
+          {/* Subtle Invoice Watermark */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
+            <img src={OBRYNT_LOGO_SRC} alt="" className="w-96 object-contain" />
+          </div>
+
           {/* Header */}
-          <div className="flex justify-between items-start border-b border-stone-200 pb-6">
-            <div>
-              <div className="text-2xl font-black tracking-widest text-[#111111]">
-                OBRYNT<span className="text-[#7a8e12]">.</span>
+          <div className="flex justify-between items-start border-b border-stone-200 pb-6 relative z-10">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-full overflow-hidden border border-stone-700 bg-black shrink-0 shadow-sm">
+                <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
               </div>
-              <p className="text-xs text-stone-500 font-medium mt-1">
-                {settings.tagline}
-              </p>
-              <p className="text-xs text-stone-500">
-                GSTIN: 29AABCO0001Z1ZX · {settings.contactEmail}
-              </p>
+              <div>
+                <div className="text-2xl font-black font-serif tracking-[0.2em] text-[#111111]">
+                  OBRYNT
+                </div>
+                <div className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">
+                  TIMELESS STYLE · OFFICIAL ATELIER TAX INVOICE
+                </div>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  GSTIN: 29AABCO0001Z1ZX · {settings.contactEmail}
+                </p>
+              </div>
             </div>
 
             <div className="text-right">

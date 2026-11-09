@@ -23,6 +23,7 @@ import {
   Package,
 } from 'lucide-react';
 import { DeliverySession, DeliveryAssignment } from '../types';
+import { OBRYNT_EMBLEM_SRC } from './ObryntBrand';
 import {
   getDeliveryAssignments,
   recordDeliveryCopyAction,
@@ -163,12 +164,12 @@ export const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({
       {/* Main App Bar */}
       <header className="sticky top-0 z-30 bg-[#121212]/95 border-b border-stone-800 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#d7ff3f] text-[#111111] flex items-center justify-center font-black text-base shadow-lg shadow-[#d7ff3f]/10">
-            <Truck className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-full overflow-hidden border border-stone-700 bg-black shadow-md shrink-0">
+            <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-base sm:text-lg font-black tracking-wider text-white">
+              <span className="text-base sm:text-lg font-black font-serif tracking-wider text-white">
                 OBRYNT COURIER OS
               </span>
               <span className="text-stone-500 font-bold hidden sm:inline">/</span>

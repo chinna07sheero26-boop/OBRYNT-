@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Trash2, Plus, Minus, ArrowRight, Tag, Truck, Check, Sparkles } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ArrowRight, Tag, Truck, Check, Sparkles, ShieldCheck } from 'lucide-react';
 import { CartItem } from '../types';
+import { OBRYNT_EMBLEM_SRC } from './ObryntBrand';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -73,11 +74,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col">
           {/* Header */}
           <div className="p-5 sm:p-6 border-b border-[#e4e1da] flex items-center justify-between bg-stone-50/80">
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black text-[#111111] tracking-tight">Your Bag</h2>
-              <span className="bg-[#111111] text-[#d7ff3f] text-xs font-black px-2 py-0.5 rounded-full">
-                {items.reduce((s, x) => s + x.quantity, 0)}
-              </span>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full overflow-hidden border border-stone-600 bg-black shrink-0">
+                <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-lg font-black text-[#111111] tracking-tight">Your OBRYNT Bag</h2>
+                  <span className="bg-[#111111] text-[#d7ff3f] text-xs font-black px-2 py-0.5 rounded-full">
+                    {items.reduce((s, x) => s + x.quantity, 0)}
+                  </span>
+                </div>
+                <div className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                  Direct Atelier Checkout
+                </div>
+              </div>
             </div>
             <button
               onClick={onClose}

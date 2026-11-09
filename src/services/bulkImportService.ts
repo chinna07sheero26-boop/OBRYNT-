@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { Product, BulkImportItem, BulkImportReport } from '../types';
+import { Product, BulkImportItem, BulkImportReport, SupplierFeedProtocol } from '../types';
 import { classifyProductLocally } from '../utils/aiTaxonomyEngine';
 
 export interface RawImportProduct {
@@ -500,4 +500,355 @@ export function downloadBulkImportTemplate(format: 'csv' | 'xlsx' = 'xlsx'): voi
     link.click();
     URL.revokeObjectURL(url);
   }
+}
+
+export interface SupplierCatalogueFetchResult {
+  success: boolean;
+  url: string;
+  isAuthorized: boolean;
+  supportedProtocol: SupplierFeedProtocol;
+  protocolLabel: string;
+  sourceBrand?: string;
+  totalProductsDiscovered: number;
+  paginated: boolean;
+  pagesRetrieved: number;
+  totalPages?: number;
+  pageSize?: number;
+  products: RawImportProduct[];
+  message: string;
+  authorizationNotice?: string;
+  checklist?: string[];
+}
+
+export const VERIFIED_SUPPLIER_SAMPLE_FEEDS = [
+  {
+    name: 'OBRYNT Global Apparel Supplier Hub',
+    url: 'https://api.obrynt.com/v1/supplier-feed/apparel.json',
+    protocol: 'Official JSON REST API (2 Paginated Batches)',
+    badge: 'Official API',
+    description: '25+ Items: Streetwear Tees, Oxford Shirts, Raw Selvedge Denim, Kurtis, Sarees, French Terry Hoodies',
+    categoryHint: 'Apparel & Fashion',
+  },
+  {
+    name: 'Apex Footwear & Sneaker Wholesale Feed',
+    url: 'https://api.obrynt.com/v1/supplier-feed/footwear.xml',
+    protocol: 'Permitted XML / Google Merchant Feed',
+    badge: 'XML Feed',
+    description: '10+ Items: Marathon Running Shoes, Chelsea Boots, Oxford Brogues, Ergonomic Orthopedic Slides',
+    categoryHint: 'Footwear',
+  },
+  {
+    name: 'Chrono Lux & Accessories Partner Feed',
+    url: 'https://api.obrynt.com/v1/supplier-feed/accessories.json',
+    protocol: 'Wholesale Partner JSON Feed',
+    badge: 'JSON Feed',
+    description: '10+ Items: Automatic Skeleton Watches, Polarized Sunglasses, Leather Belts, Laptop Backpacks',
+    categoryHint: 'Accessories & Watches',
+  },
+  {
+    name: 'Restricted Domain Demo (Compliance Test)',
+    url: 'https://api.obrynt.com/v1/supplier-feed/unauthorized-demo.com',
+    protocol: 'Restricted / Scraping Prohibited',
+    badge: 'Security Test',
+    description: 'Demonstrates OBRYNT policy: Explains supplier API requirement, never bypasses restrictions',
+    categoryHint: 'Access Policy',
+  },
+];
+
+/**
+ * Connect to an authorized supplier catalogue URL, detect feed type, and retrieve products
+ */
+export async function fetchSupplierCatalogueUrl(
+  url: string,
+  options?: { maxPages?: number }
+): Promise<SupplierCatalogueFetchResult> {
+  const response = await fetch('/api/supplier/fetch-catalogue-url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      url: url.trim(),
+      maxPages: options?.maxPages || 3,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Supplier server connection error (HTTP ${response.status})`);
+  }
+
+  const data: SupplierCatalogueFetchResult = await response.json();
+  return data;
+}
+
+export interface RegisteredSupplier {
+  id: string;
+  name: string;
+  contactEmail?: string;
+  phone?: string;
+  apiEndpoint?: string;
+  authType: 'none' | 'api_key' | 'bearer' | 'basic';
+  apiKey?: string;
+  defaultMarginPct: number;
+  productCount: number;
+  status: 'active' | 'suspended';
+  notes?: string;
+}
+
+export const INITIAL_REGISTERED_SUPPLIERS: RegisteredSupplier[] = [
+  {
+    id: 'sup-apparel-hub',
+    name: 'OBRYNT Global Apparel Hub',
+    contactEmail: 'sourcing@obrynt-apparel.com',
+    phone: '+91 98200 11234',
+    apiEndpoint: 'https://api.obrynt.com/v1/supplier-feed/apparel.json',
+    authType: 'api_key',
+    apiKey: 'ob_live_apparel_key_99',
+    defaultMarginPct: 40,
+    productCount: 142,
+    status: 'active',
+    notes: 'Premium combed cotton t-shirts, oxford shirts, and heavyweight fleece hoodies.',
+  },
+  {
+    id: 'sup-apex-shoes',
+    name: 'Apex Footwear & Sneaker Guild',
+    contactEmail: 'orders@apex-footwear.net',
+    phone: '+91 98450 55678',
+    apiEndpoint: 'https://api.obrynt.com/v1/supplier-feed/footwear.xml',
+    authType: 'none',
+    defaultMarginPct: 45,
+    productCount: 88,
+    status: 'active',
+    notes: 'High cushion running shoes, chelsea boots, and orthopedic comfort slides.',
+  },
+  {
+    id: 'sup-chrono-lux',
+    name: 'Chrono Lux Watches & Accessories',
+    contactEmail: 'wholesale@chronolux-b2b.ch',
+    phone: '+41 22 555 0192',
+    apiEndpoint: 'https://api.obrynt.com/v1/supplier-feed/accessories.json',
+    authType: 'bearer',
+    defaultMarginPct: 50,
+    productCount: 54,
+    status: 'active',
+    notes: 'Sapphire skeleton watches, polarized sunglasses, and full-grain leather belts.',
+  },
+  {
+    id: 'sup-aura-ethnic',
+    name: 'Aura Ethnic Couture & Handlooms',
+    contactEmail: 'b2b@aura-ethnic.in',
+    phone: '+91 98111 22334',
+    apiEndpoint: 'https://api.obrynt.com/v1/supplier-feed/ethnic.json',
+    authType: 'none',
+    defaultMarginPct: 42,
+    productCount: 96,
+    status: 'active',
+    notes: 'Flared anarkali kurtis, hand-embroidered georgette kurtas, and festive collections.',
+  },
+];
+
+const SUPPLIERS_STORAGE_KEY = 'obrynt_registered_suppliers_v1';
+
+export function getRegisteredSuppliers(): RegisteredSupplier[] {
+  try {
+    const raw = localStorage.getItem(SUPPLIERS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return INITIAL_REGISTERED_SUPPLIERS;
+}
+
+export function saveRegisteredSupplier(supplier: RegisteredSupplier): void {
+  const current = getRegisteredSuppliers();
+  const index = current.findIndex((s) => s.id === supplier.id);
+  if (index >= 0) {
+    current[index] = supplier;
+  } else {
+    current.push(supplier);
+  }
+  try {
+    localStorage.setItem(SUPPLIERS_STORAGE_KEY, JSON.stringify(current));
+  } catch {}
+}
+
+/**
+ * Extract structured product information from single or multiple supplier URLs using Gemini 3.8 Flash
+ */
+export async function extractProductsFromUrls(
+  urls: string[],
+  supplierId?: string,
+  supplierName?: string,
+  targetMarginPct: number = 40
+): Promise<any> {
+  const cleanUrls = urls
+    .map((u) => u.trim())
+    .filter((u) => u.startsWith('http://') || u.startsWith('https://'));
+
+  if (cleanUrls.length === 0) {
+    throw new Error('Please enter at least one valid product URL starting with http:// or https://');
+  }
+
+  const response = await fetch('/api/supplier/extract-urls', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      urls: cleanUrls,
+      supplierId,
+      supplierName,
+      targetMarginPct,
+    }),
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.error || `Failed to extract from supplier URLs (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Retry failed URLs in batch
+ */
+export async function retryFailedImportUrls(
+  failedUrls: string[],
+  supplierId?: string,
+  supplierName?: string,
+  targetMarginPct: number = 40
+): Promise<any> {
+  const response = await fetch('/api/supplier/retry-batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      urls: failedUrls,
+      supplierId,
+      supplierName,
+      targetMarginPct,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to retry extraction batch');
+  }
+
+  return response.json();
+}
+
+/**
+ * Convert extracted URL items into BulkImportItem list ready for the Owner Approval System
+ */
+export function convertExtractedItemsToBulkItems(
+  extractedItems: any[],
+  existingCatalogue: Product[],
+  defaultSupplierId?: string,
+  defaultSupplierName?: string
+): BulkImportItem[] {
+  const existingSkuMap = new Set(existingCatalogue.map((p) => p.sku.toUpperCase()));
+  const existingNameMap = new Map<string, string>();
+  existingCatalogue.forEach((p) => {
+    existingNameMap.set(`${p.name.toLowerCase()}|${(p.brand || 'OBRYNT').toLowerCase()}`, p.sku);
+  });
+
+  const results: BulkImportItem[] = [];
+
+  extractedItems.forEach((item, idx) => {
+    if (!item.product && item.status !== 'success') {
+      // Failed or restricted item placeholder
+      const fallbackSku = `OB-FAIL-${Date.now().toString(36).toUpperCase()}-${idx + 1}`;
+      results.push({
+        id: `extracted-${Date.now()}-${idx + 1}`,
+        raw: item.raw || {},
+        product: {
+          id: `prod-fail-${Date.now()}-${idx + 1}`,
+          sku: fallbackSku,
+          name: `Unresolved Item from URL`,
+          description: item.errorMessage || 'Extraction could not complete.',
+          category: 'Men',
+          subcategory: 'T-shirts',
+          audience: 'Unisex',
+          brand: defaultSupplierName || 'Supplier',
+          price: 0,
+          originalPrice: 0,
+          wholesalePrice: 0,
+          stock: 0,
+          imageUrl: '/images/product_tshirt_minimal_1793012315796.jpg',
+          galleryUrls: [],
+          sizes: [],
+          colors: [],
+          color: '#171717',
+          colorName: 'Default',
+          status: 'draft',
+          isPublished: false,
+          needsReview: true,
+          supplierId: defaultSupplierId,
+          supplierName: defaultSupplierName,
+        },
+        confidence: 0,
+        category: 'Men',
+        subcategory: 'T-shirts',
+        audience: 'Unisex',
+        brand: defaultSupplierName || 'Supplier',
+        isDuplicate: false,
+        status: 'failed',
+        approvalStatus: 'pending_approval',
+        supplierCost: 0,
+        marginPct: 0,
+        suggestedSellingPrice: 0,
+        missingFields: item.missingFields || ['Product Data'],
+        extractionSourceUrl: item.url,
+        sourceSupplierId: defaultSupplierId,
+        sourceSupplierName: defaultSupplierName,
+        error: item.errorMessage || item.authorizationNotice,
+      });
+      return;
+    }
+
+    const p: Product = item.product;
+    const normKey = `${p.name.toLowerCase()}|${(p.brand || 'OBRYNT').toLowerCase()}`;
+    let isDuplicate = false;
+    let duplicateOfSku: string | undefined = undefined;
+
+    if (existingSkuMap.has(p.sku.toUpperCase())) {
+      isDuplicate = true;
+      duplicateOfSku = p.sku;
+    } else if (existingNameMap.has(normKey)) {
+      isDuplicate = true;
+      duplicateOfSku = existingNameMap.get(normKey);
+    }
+
+    // Assign supplier
+    p.supplierId = defaultSupplierId || p.supplierId;
+    p.supplierName = defaultSupplierName || p.supplierName;
+    p.wholesalePrice = item.supplierCost || p.wholesalePrice;
+    p.price = item.suggestedSellingPrice || p.price;
+    p.isPublished = false; // Always starts unapproved!
+    p.status = 'draft';
+
+    results.push({
+      id: `extracted-${Date.now()}-${idx + 1}`,
+      raw: item.raw || {},
+      product: p,
+      confidence: p.confidence || 92,
+      category: p.category || 'Men',
+      subcategory: p.subcategory || 'T-shirts',
+      audience: p.audience || 'Unisex',
+      brand: p.brand || defaultSupplierName || 'OBRYNT',
+      isDuplicate,
+      duplicateOfSku,
+      status: isDuplicate ? 'needs_review' : 'categorized',
+      approvalStatus: 'pending_approval',
+      supplierCost: item.supplierCost,
+      marginPct: item.marginPct,
+      suggestedSellingPrice: item.suggestedSellingPrice,
+      missingFields: item.missingFields || [],
+      extractionSourceUrl: item.url,
+      sourceSupplierId: defaultSupplierId,
+      sourceSupplierName: defaultSupplierName,
+      error: isDuplicate ? `Duplicate product detected (matches SKU: ${duplicateOfSku})` : undefined,
+    });
+  });
+
+  return results;
 }

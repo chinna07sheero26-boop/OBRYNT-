@@ -141,7 +141,79 @@ export interface BulkImportItem {
   isDuplicate: boolean;
   duplicateOfSku?: string;
   status: 'pending' | 'categorized' | 'needs_review' | 'imported' | 'failed';
+  approvalStatus?: 'pending_approval' | 'approved' | 'rejected';
+  supplierCost?: number;
+  marginPct?: number;
+  suggestedSellingPrice?: number;
+  missingFields?: string[];
+  extractionSourceUrl?: string;
+  sourceSupplierId?: string;
+  sourceSupplierName?: string;
   error?: string;
+}
+
+export interface SupplierUrlExtractionItem {
+  url: string;
+  status: 'pending' | 'success' | 'restricted' | 'failed';
+  product?: Product;
+  raw?: Record<string, any>;
+  supplierCost?: number;
+  suggestedSellingPrice?: number;
+  marginPct?: number;
+  missingFields?: string[];
+  protocolLabel?: string;
+  errorMessage?: string;
+  authorizationNotice?: string;
+}
+
+export interface SupplierExtractionResponse {
+  success: boolean;
+  totalRequested: number;
+  successfulCount: number;
+  failedCount: number;
+  restrictedCount: number;
+  results: SupplierUrlExtractionItem[];
+  batchId: string;
+  supplierId?: string;
+  supplierName?: string;
+  message: string;
+}
+
+export interface ImportBatchRecord {
+  id: string; // e.g. BATCH-2026-X1
+  name: string;
+  supplierId?: string;
+  supplierName?: string;
+  sourceType: 'single_url' | 'bulk_urls' | 'file' | 'supplier_feed' | 'demo';
+  totalProducts: number;
+  approvedCount: number;
+  pendingCount: number;
+  rejectedCount: number;
+  duplicatesCount: number;
+  status: 'pending_review' | 'partially_approved' | 'completed' | 'failed';
+  createdAt: string;
+  updatedAt: string;
+  errorLog?: string[];
+}
+
+export type SupplierFeedProtocol =
+  | 'official_json_api'
+  | 'json_feed'
+  | 'xml_feed'
+  | 'csv_export'
+  | 'unauthorized_or_unsupported';
+
+export interface SupplierCatalogueDetection {
+  url: string;
+  isAuthorized: boolean;
+  supportedProtocol: SupplierFeedProtocol;
+  protocolLabel: string;
+  sourceBrand?: string;
+  totalProductsDiscovered: number;
+  paginated: boolean;
+  pagesRetrieved: number;
+  message: string;
+  authorizationNotice?: string;
 }
 
 export interface BulkImportReport {
@@ -155,6 +227,10 @@ export interface BulkImportReport {
   failed: number;
   categoriesBreakdown: Record<string, number>;
   sourceName: string;
+  sourceType?: 'file' | 'supplier_url' | 'demo' | 'demo_feed';
+  discoveredCount?: number;
+  skippedCount?: number;
+  protocolLabel?: string;
 }
 
 export interface CartItem {
@@ -396,6 +472,125 @@ export interface DeliverySession {
   role: 'delivery';
   token: string;
   expiresAt: number;
+}
+
+// =========================================================================
+// COMPANY STAFF ACCESS & FULFILMENT TYPES
+// =========================================================================
+export type CompanyFulfillmentStatus = 'Order received' | 'Packing' | 'Packed' | 'Dispatched';
+
+export interface CompanyAccount {
+  id: string; // unique company ID (e.g. COMP-MEESHO-101)
+  name: string; // e.g. Meesho, Amazon, Flipkart, Myntra
+  contactPerson: string;
+  email: string;
+  phone: string;
+  address?: string;
+  accessPasswordHash: string; // SHA-256 HMAC hashed
+  plainPasswordPreview?: string; // Stored securely for initial owner preview
+  status: 'active' | 'suspended';
+  assignedProducts: string[]; // Product SKUs
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt?: string;
+  assignedOrdersCount?: number;
+}
+
+export interface CompanyAssignedOrder {
+  assignmentId: string;
+  companyId: string;
+  companyName: string;
+  orderId: string;
+  orderDate: string;
+  customerName: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  city: string;
+  state: string;
+  pincode: string;
+  productName: string;
+  productSku: string;
+  productImageUrl: string;
+  quantity: number;
+  size: string;
+  color: string;
+  packingStatus: 'Pending' | 'In Packing' | 'Packed';
+  dispatchStatus: 'Pending' | 'Dispatched';
+  fulfillmentStatus: CompanyFulfillmentStatus;
+  statusUpdatedAt?: string;
+  notes?: string;
+}
+
+export interface CompanyStaffSession {
+  companyId: string;
+  companyName: string;
+  role: 'company_staff';
+  token: string;
+  expiresAt: number;
+  authenticatedAt: string;
+}
+
+// =========================================================================
+// FACTORY PARTNER MANAGEMENT & PRODUCT SUBMISSION TYPES
+// =========================================================================
+export type FactorySubmissionStatus = 'pending_approval' | 'approved' | 'rejected' | 'needs_revision';
+
+export interface FactoryPartner {
+  id: string; // unique factory ID (e.g. FAC-ATELIER-101)
+  name: string; // Factory Name
+  ownerName: string;
+  email: string;
+  phone: string;
+  address: string;
+  accessKeyHash: string;
+  plainPasswordPreview?: string;
+  invitationToken: string; // Unique token for secure invite link
+  status: 'active' | 'suspended' | 'deactivated';
+  capacity?: string;
+  specialization?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastActiveAt?: string;
+  submissionsCount?: number;
+  approvedCount?: number;
+}
+
+export interface FactoryProductSubmission {
+  id: string;
+  factoryId: string;
+  factoryName: string;
+  productName: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  images: string[];
+  factoryQuotation: number; // Factory cost in INR
+  finalSellingPrice?: number; // Final customer price set by Owner
+  sizes: string[];
+  colors: string[];
+  stockQuantity: number;
+  materialFabric: string;
+  sku: string;
+  moq: number; // Minimum Order Quantity
+  status: FactorySubmissionStatus;
+  reviewNotes?: string;
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  publishedProductSku?: string;
+  importMethod?: 'single' | 'bulk';
+}
+
+export interface FactorySession {
+  factoryId: string;
+  factoryName: string;
+  ownerName: string;
+  role: 'factory_partner';
+  token: string;
+  expiresAt: number;
+  authenticatedAt: string;
 }
 
 

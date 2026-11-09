@@ -1,5 +1,6 @@
 import React from 'react';
 import { Package, CreditCard, Heart, Sparkles, ArrowRight } from 'lucide-react';
+import { OBRYNT_EMBLEM_SRC } from './ObryntBrand';
 
 interface AccountSectionProps {
   ordersCount: number;
@@ -20,8 +21,11 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
     <section id="account" className="my-12 sm:my-16">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
         <div>
-          <div className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#7a8e12] mb-1">
-            Your OBRYNT
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-900 border border-stone-800 text-[10px] font-black uppercase tracking-[0.2em] text-stone-200 mb-2">
+            <div className="w-3.5 h-3.5 rounded-full overflow-hidden border border-stone-600 bg-black shrink-0">
+              <img src={OBRYNT_EMBLEM_SRC} alt="" className="w-full h-full object-cover" />
+            </div>
+            <span>OFFICIAL OBRYNT CLIENT SUITE</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-[34px] font-black tracking-[-0.04em] text-[#111111]">
             Everything in one account

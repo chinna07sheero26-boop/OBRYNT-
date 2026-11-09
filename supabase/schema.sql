@@ -428,4 +428,243 @@ create policy "Couriers update status on own assignments"
       where authorized_email = auth.email() and status = 'active'
     )
   );
+
 -- =========================================================================
+-- 13. COMPANY MANAGEMENT & STAFF ACCESS (PART A)
+-- Roles: 'owner' manages; 'company_staff' accesses isolated orders
+-- =========================================================================
+create table if not exists public.companies (
+  id text primary key, -- Unique company identity e.g. 'COMP-MEESHO-101'
+  name text not null, -- Company Name e.g. Meesho, Amazon, Flipkart
+  contact_person text not null,
+  email text not null,
+  phone text not null,
+  address text,
+  password_hash text not null, -- Cryptographically hashed password
+  status text not null default 'active' check (status in ('active', 'suspended')),
+  assigned_products text[] default array[]::text[],
+  notes text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_companies_status on public.companies(status);
+
+-- 14. COMPANY ORDER ASSIGNMENTS
+create table if not exists public.company_order_assignments (
+  id uuid default uuid_generate_v4() primary key,
+  company_id text references public.companies(id) on delete cascade,
+  order_id text not null,
+  order_date text not null,
+  customer_name text not null,
+  customer_phone text not null,
+  delivery_address text not null,
+  city text not null,
+  state text not null,
+  pincode text not null,
+  product_name text not null,
+  product_sku text not null,
+  product_image_url text not null,
+  quantity integer not null default 1,
+  size text default 'Standard',
+  color text default 'Standard',
+  packing_status text not null default 'Pending' check (packing_status in ('Pending', 'In Packing', 'Packed')),
+  dispatch_status text not null default 'Pending' check (dispatch_status in ('Pending', 'Dispatched')),
+  fulfillment_status text not null default 'Order received' check (fulfillment_status in ('Order received', 'Packing', 'Packed', 'Dispatched')),
+  status_updated_at timestamp with time zone default timezone('utc'::text, now()),
+  notes text,
+  assigned_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_company_asgn_comp on public.company_order_assignments(company_id);
+create index if not exists idx_company_asgn_order on public.company_order_assignments(order_id);
+
+-- 15. FACTORY PARTNER REGISTRATION & INVITATIONS (PART B)
+create table if not exists public.factory_partners (
+  id text primary key, -- Unique factory identity e.g. 'FAC-ATELIER-101'
+  name text not null, -- Factory Name
+  owner_name text not null,
+  email text not null,
+  phone text not null,
+  address text not null,
+  access_key_hash text not null,
+  invitation_token text not null unique,
+  status text not null default 'active' check (status in ('active', 'suspended', 'deactivated')),
+  capacity text,
+  specialization text,
+  notes text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_factory_invite on public.factory_partners(invitation_token);
+create index if not exists idx_factory_status on public.factory_partners(status);
+
+-- 16. FACTORY PRODUCT SUBMISSIONS & OWNER APPROVAL WORKFLOW
+create table if not exists public.factory_submissions (
+  id uuid default uuid_generate_v4() primary key,
+  factory_id text references public.factory_partners(id) on delete cascade,
+  factory_name text not null,
+  product_name text not null,
+  description text not null,
+  category text not null,
+  subcategory text not null,
+  images text[] not null default array[]::text[],
+  factory_quotation numeric not null,
+  final_selling_price numeric, -- Set by OBRYNT Owner upon approval
+  sizes text[] not null default array['S', 'M', 'L', 'XL']::text[],
+  colors text[] not null default array['#171717']::text[],
+  stock_quantity integer not null default 100,
+  material_fabric text not null,
+  sku text not null,
+  moq integer not null default 50,
+  status text not null default 'pending_approval' check (status in ('pending_approval', 'approved', 'rejected', 'needs_revision')),
+  review_notes text,
+  published_product_sku text,
+  submitted_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  reviewed_at timestamp with time zone,
+  reviewed_by text
+);
+
+create index if not exists idx_factory_sub_factory on public.factory_submissions(factory_id);
+create index if not exists idx_factory_sub_status on public.factory_submissions(status);
+
+-- 17. ROW LEVEL SECURITY (RLS) FOR COMPANIES & FACTORIES
+alter table public.companies enable row level security;
+alter table public.company_order_assignments enable row level security;
+alter table public.factory_partners enable row level security;
+alter table public.factory_submissions enable row level security;
+
+-- Admin policies (Owner has full access)
+drop policy if exists "Admins manage companies" on public.companies;
+create policy "Admins manage companies" on public.companies for all using (public.is_admin_or_owner());
+
+drop policy if exists "Admins manage company order assignments" on public.company_order_assignments;
+create policy "Admins manage company order assignments" on public.company_order_assignments for all using (public.is_admin_or_owner());
+
+drop policy if exists "Admins manage factory partners" on public.factory_partners;
+create policy "Admins manage factory partners" on public.factory_partners for all using (public.is_admin_or_owner());
+
+drop policy if exists "Admins manage factory submissions" on public.factory_submissions;
+create policy "Admins manage factory submissions" on public.factory_submissions for all using (public.is_admin_or_owner());
+
+-- Company Staff Isolated Policies (Can ONLY view/update assigned orders for their authenticated company)
+drop policy if exists "Company staff view assigned orders only" on public.company_order_assignments;
+create policy "Company staff view assigned orders only"
+  on public.company_order_assignments for select
+  using (
+    public.is_admin_or_owner() or
+    company_id = current_setting('request.jwt.claims', true)::json->>'company_id'
+  );
+
+drop policy if exists "Company staff update fulfilment status on assigned orders" on public.company_order_assignments;
+create policy "Company staff update fulfilment status on assigned orders"
+  on public.company_order_assignments for update
+  using (
+    public.is_admin_or_owner() or
+    company_id = current_setting('request.jwt.claims', true)::json->>'company_id'
+  );
+
+-- Factory Partners Isolated Policies (Can ONLY view/create their own submissions)
+drop policy if exists "Factory view own profile" on public.factory_partners;
+create policy "Factory view own profile"
+  on public.factory_partners for select
+  using (
+    public.is_admin_or_owner() or
+    id = current_setting('request.jwt.claims', true)::json->>'factory_id'
+  );
+
+drop policy if exists "Factory view own submissions" on public.factory_submissions;
+create policy "Factory view own submissions"
+  on public.factory_submissions for select
+  using (
+    public.is_admin_or_owner() or
+    factory_id = current_setting('request.jwt.claims', true)::json->>'factory_id'
+  );
+
+drop policy if exists "Factory submit products" on public.factory_submissions;
+create policy "Factory submit products"
+  on public.factory_submissions for insert
+  with check (
+    public.is_admin_or_owner() or
+    factory_id = current_setting('request.jwt.claims', true)::json->>'factory_id'
+  );
+
+-- =========================================================================
+-- 18. SMART BULK IMPORT & STAGING ENGINE (100,000+ CATALOGUE CAPACITY)
+-- =========================================================================
+
+create table if not exists public.import_batches (
+  id text primary key, -- e.g. 'BATCH-2026-X1'
+  name text not null,
+  supplier_id uuid references public.suppliers(id) on delete set null,
+  supplier_name text,
+  source_type text not null check (source_type in ('single_url', 'bulk_urls', 'file', 'supplier_feed', 'demo')),
+  total_products integer not null default 0,
+  approved_count integer not null default 0,
+  pending_count integer not null default 0,
+  rejected_count integer not null default 0,
+  duplicates_count integer not null default 0,
+  status text not null default 'pending_review' check (status in ('pending_review', 'partially_approved', 'completed', 'failed')),
+  error_log jsonb default '[]'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_import_batches_status on public.import_batches(status);
+create index if not exists idx_import_batches_supplier on public.import_batches(supplier_id);
+create index if not exists idx_import_batches_created on public.import_batches(created_at desc);
+
+create table if not exists public.import_staging_products (
+  id uuid default uuid_generate_v4() primary key,
+  batch_id text references public.import_batches(id) on delete cascade not null,
+  sku text not null,
+  product_name text not null,
+  description text,
+  category text not null,
+  subcategory text,
+  brand text default 'OBRYNT',
+  supplier_id uuid references public.suppliers(id) on delete set null,
+  supplier_name text,
+  source_url text,
+  supplier_cost numeric not null default 0, -- Private to owner
+  suggested_price numeric not null default 0,
+  final_selling_price numeric, -- Set by owner upon approval
+  margin_pct numeric,
+  stock_quantity integer not null default 50,
+  image_urls text[] default array[]::text[],
+  sizes text[] default array['S', 'M', 'L', 'XL']::text[],
+  colors text[] default array['#171717']::text[],
+  variants jsonb default '[]'::jsonb,
+  material text,
+  confidence numeric default 90.0,
+  is_duplicate boolean default false,
+  duplicate_of_sku text,
+  missing_fields text[] default array[]::text[],
+  approval_status text not null default 'pending_approval' check (approval_status in ('pending_approval', 'approved', 'rejected')),
+  published_product_id uuid references public.products(id) on delete set null,
+  raw_payload jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_staging_batch on public.import_staging_products(batch_id);
+create index if not exists idx_staging_sku on public.import_staging_products(sku);
+create index if not exists idx_staging_status on public.import_staging_products(approval_status);
+create index if not exists idx_staging_dup on public.import_staging_products(is_duplicate);
+
+-- Compound index on products for lightning-fast cursor pagination at 100k+ scale
+create index if not exists idx_products_fast_paginate on public.products(is_published, category, created_at desc);
+
+-- RLS: Strict Owner & Admin Isolation for Staging & Batches
+alter table public.import_batches enable row level security;
+alter table public.import_staging_products enable row level security;
+
+drop policy if exists "Admins manage import batches" on public.import_batches;
+create policy "Admins manage import batches" on public.import_batches for all using (public.is_admin_or_owner());
+
+drop policy if exists "Admins manage staging products" on public.import_staging_products;
+create policy "Admins manage staging products" on public.import_staging_products for all using (public.is_admin_or_owner());
+-- =========================================================================
+
+

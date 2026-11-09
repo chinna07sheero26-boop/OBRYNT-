@@ -23,6 +23,7 @@ import {
   Printer,
   X,
 } from 'lucide-react';
+import { OBRYNT_EMBLEM_SRC } from './ObryntBrand';
 import { Product, OrderDetails } from '../types';
 import { getStaffSession } from '../services/staffAuthService';
 
@@ -149,12 +150,12 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
       {/* Top Staff Navigation Bar */}
       <header className="sticky top-0 z-40 bg-[#161b22]/95 backdrop-blur-md border-b border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-cyan-500 text-slate-950 flex items-center justify-center font-black shadow-md shadow-cyan-500/20">
-            <Boxes className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-full overflow-hidden border border-slate-700 bg-black shadow-md shrink-0">
+            <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-base font-black tracking-tight text-white">OBRYNT</span>
+              <span className="text-base font-black font-serif tracking-[0.16em] text-white">OBRYNT</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800/80 font-black tracking-wider uppercase">
                 Staff Operations Portal
               </span>

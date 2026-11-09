@@ -1,4 +1,5 @@
 import React from 'react';
+import { ObryntLogo } from './ObryntBrand';
 import { Search, Heart, ShoppingBag, User, Sparkles, X } from 'lucide-react';
 import { ALL_CATEGORIES, Category } from '../types';
 
@@ -58,16 +59,16 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Main Topbar */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#e4e1da] transition-all">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4 md:gap-8">
-          {/* Logo */}
+          {/* Official OBRYNT Brand Logo */}
           <button
             onClick={() => {
               onSelectCategory('All');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="text-2xl sm:text-[27px] font-black tracking-[0.16em] text-[#111111] hover:opacity-90 transition-opacity shrink-0 cursor-pointer flex items-center"
+            className="hover:opacity-90 transition-opacity shrink-0 cursor-pointer text-left"
             aria-label="OBRYNT Home"
           >
-            OBRYNT<span className="text-[#7a8e12]">.</span>
+            <ObryntLogo variant="horizontal" size="md" theme="light" showSubtitle={true} />
           </button>
 
           {/* Search Form */}

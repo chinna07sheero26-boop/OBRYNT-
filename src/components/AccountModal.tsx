@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { OrderDetails, TransactionRecord, CustomDesign, Product } from '../types';
+import { OBRYNT_EMBLEM_SRC } from './ObryntBrand';
 
 interface AccountModalProps {
   isOpen: boolean;
@@ -61,13 +62,18 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         {/* Modal Header */}
         <div className="p-5 sm:p-6 border-b border-[#e4e1da] flex items-center justify-between bg-stone-50/70">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#111111] text-[#d7ff3f] flex items-center justify-center font-black">
-              OB
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-stone-700 bg-black shadow-sm shrink-0">
+              <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-[#111111] tracking-tight">
-                My OBRYNT Account
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl sm:text-2xl font-black text-[#111111] tracking-tight">
+                  My OBRYNT Account
+                </h2>
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-stone-900 text-stone-200">
+                  ATELIER
+                </span>
+              </div>
               <p className="text-xs text-stone-500 font-medium">
                 Orders, payments, wishlist, and bespoke saved studio designs
               </p>

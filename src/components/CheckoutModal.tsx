@@ -20,6 +20,7 @@ import {
   openRazorpayCheckout,
   RazorpayPublicConfig,
 } from '../services/paymentService';
+import { OBRYNT_EMBLEM_SRC } from './ObryntBrand';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -190,17 +191,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       >
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-[#e4e1da] flex items-center justify-between bg-stone-50/80">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black text-[#111111] tracking-tight">
-                {placedOrder ? 'Payment Verified & Order Confirmed' : 'Express Checkout'}
-              </h2>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-stone-600 bg-black shrink-0">
+              <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
             </div>
-            <p className="text-xs text-stone-500 font-medium mt-0.5">
-              {placedOrder
-                ? 'Your bespoke garments are confirmed for fulfillment'
-                : 'Secure encrypted payment gateway via Razorpay Test Mode'}
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-black text-[#111111] tracking-tight">
+                  {placedOrder ? 'OBRYNT Order Confirmed' : 'OBRYNT Express Checkout'}
+                </h2>
+              </div>
+              <p className="text-xs text-stone-500 font-medium">
+                {placedOrder
+                  ? 'Your bespoke order has been authenticated & sent to atelier'
+                  : 'Encrypted checkout · Verified authentic merchandise'}
+              </p>
+            </div>
           </div>
 
           <button
@@ -217,20 +223,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {placedOrder ? (
             /* Order Confirmation & Payment Receipt Screen */
             <div className="text-center py-4 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-[#d7ff3f] text-[#111111] mx-auto flex items-center justify-center shadow-md">
-                <CheckCircle2 className="w-9 h-9" />
+              <div className="relative w-20 h-20 mx-auto">
+                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-stone-700 bg-black shadow-xl">
+                  <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT Confirmed" className="w-full h-full object-cover" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white shadow">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
               </div>
 
               <div>
-                <span className="text-[11px] font-black uppercase tracking-widest text-[#7a8e12] inline-flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4" />
+                <span className="text-[11px] font-black uppercase tracking-widest text-stone-600 inline-flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
                   <span>
                     {placedOrder.paymentStatus === 'captured'
-                      ? 'Razorpay Payment Captured & Verified'
+                      ? 'Payment Captured · OBRYNT Order Authenticated'
                       : 'Cash on Delivery Order Confirmed'}
                   </span>
                 </span>
-                <h3 className="text-2xl font-black text-[#111111] mt-1">
+                <h3 className="text-2xl font-black text-[#111111] mt-1 font-serif tracking-wider">
                   Order ID: {placedOrder.orderId}
                 </h3>
                 {placedOrder.paymentGatewayRef && (

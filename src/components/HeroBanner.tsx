@@ -1,49 +1,67 @@
 import React, { useState } from 'react';
-import { Sparkles, ArrowDownRight, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowDownRight, ShieldCheck, Award } from 'lucide-react';
+import { OBRYNT_EMBLEM_SRC, OBRYNT_LOGO_SRC } from './ObryntBrand';
 
 interface HeroBannerProps {
   onExploreClick: () => void;
   onCustomStudioClick: () => void;
+  onOpenBrandAssets?: () => void;
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
   onExploreClick,
   onCustomStudioClick,
+  onOpenBrandAssets,
 }) => {
-  const [heroShirtColor, setHeroShirtColor] = useState('#e7e7e2');
-  const [heroTextColor, setHeroTextColor] = useState('#151515');
+  const [heroShirtColor, setHeroShirtColor] = useState('#111111');
+  const [heroTextColor, setHeroTextColor] = useState('#e5e7eb');
 
   const heroSwatches = [
-    { color: '#e7e7e2', text: '#151515', label: 'Chalk' },
-    { color: '#171717', text: '#d7ff3f', label: 'Black' },
-    { color: '#a52e35', text: '#ffffff', label: 'Crimson' },
-    { color: '#243c6b', text: '#ffffff', label: 'Navy' },
-    { color: '#64745a', text: '#ffffff', label: 'Olive' },
+    { color: '#111111', text: '#e5e7eb', label: 'Obsidian Black' },
+    { color: '#1f2937', text: '#f3f4f6', label: 'Platinum Slate' },
+    { color: '#f5f5f0', text: '#111111', label: 'Chalk White' },
+    { color: '#450a0a', text: '#ffffff', label: 'Burgundy Crimson' },
+    { color: '#172554', text: '#ffffff', label: 'Midnight Navy' },
   ];
 
   return (
-    <section className="relative my-6 sm:my-8 bg-[#151515] text-white rounded-[26px] overflow-hidden shadow-xl border border-stone-800">
-      <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] min-h-[420px]">
+    <section className="relative my-6 sm:my-8 bg-gradient-to-br from-[#121212] via-[#0d0d0d] to-[#050505] text-white rounded-[28px] overflow-hidden shadow-2xl border border-stone-800">
+      {/* Subtle background glow */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-stone-700/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] min-h-[440px]">
         {/* Left Copy Column */}
         <div className="p-6 sm:p-10 lg:p-16 flex flex-col justify-center items-start z-10">
-          <div className="text-[11px] sm:text-xs tracking-[0.2em] uppercase text-[#c6e85b] font-extrabold flex items-center gap-1.5 mb-3">
-            <span>Your style. Your rules.</span>
+          {/* Official Emblem Pill */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-900/90 border border-stone-700/80 mb-4 shadow-sm">
+            <div className="w-5 h-5 rounded-full overflow-hidden border border-stone-600 bg-black shrink-0">
+              <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-[11px] font-black uppercase tracking-[0.22em] text-stone-200">
+              OFFICIAL OBRYNT ATELIER
+            </span>
+            <span className="w-1 h-1 rounded-full bg-stone-500" />
+            <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">
+              TIMELESS STYLE
+            </span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl lg:text-[72px] font-black tracking-[-0.05em] leading-[0.95] text-white mb-5 uppercase">
             WEAR<br />
             YOUR<br />
-            <span className="text-[#d7ff3f]">IDENTITY.</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-stone-200 via-stone-300 to-stone-400">
+              IDENTITY.
+            </span>
           </h1>
 
-          <p className="text-stone-300 text-sm sm:text-base max-w-[460px] leading-relaxed mb-8">
-            Discover everyday essentials, footwear, beauty and accessories — or step into our studio to create a custom garment that is completely yours.
+          <p className="text-stone-300 text-sm sm:text-base max-w-[480px] leading-relaxed mb-8 font-normal">
+            Everyday apparel, footwear, beauty essentials, and a live bespoke design studio. Handcrafted with our official platinum silver hallmark.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <button
               onClick={onExploreClick}
-              className="px-6 py-3.5 bg-[#d7ff3f] hover:bg-[#cbf528] text-[#111111] font-black text-sm rounded-full transition-transform active:scale-95 cursor-pointer shadow-md inline-flex items-center gap-2"
+              className="px-6 py-3.5 bg-white hover:bg-stone-200 text-[#111111] font-black text-sm rounded-full transition-transform active:scale-95 cursor-pointer shadow-lg inline-flex items-center gap-2"
             >
               <span>EXPLORE THE COLLECTION</span>
               <ArrowDownRight className="w-4 h-4" />
@@ -51,42 +69,62 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
             <button
               onClick={onCustomStudioClick}
-              className="px-5 py-3.5 bg-white/10 hover:bg-white/15 text-white border border-white/20 font-bold text-sm rounded-full backdrop-blur-md transition-colors cursor-pointer inline-flex items-center gap-2"
+              className="px-5 py-3.5 bg-stone-900/80 hover:bg-stone-800 text-stone-100 border border-stone-700 font-bold text-sm rounded-full backdrop-blur-md transition-colors cursor-pointer inline-flex items-center gap-2 shadow-sm"
             >
-              <Sparkles className="w-4 h-4 text-[#d7ff3f]" />
+              <Sparkles className="w-4 h-4 text-stone-300" />
               <span>CUSTOM STUDIO</span>
             </button>
           </div>
         </div>
 
-        {/* Right Art Column with Interactive Garment & Floating Glass Cards */}
-        <div className="relative min-h-[320px] lg:min-h-[420px] grid place-items-center bg-[radial-gradient(circle_at_55%_40%,#454a31,#202020_56%,#151515)] p-6 overflow-hidden">
-          {/* Floating Tag 1 */}
-          <div className="absolute top-[12%] left-[8%] bg-white/10 border border-white/20 backdrop-blur-md px-3.5 py-2 rounded-xl text-xs font-bold text-white tracking-wide shadow-lg hidden sm:block pointer-events-none">
-            <span>YOUR STYLE, YOUR WAY</span>
+        {/* Right Art Column with Official Silver Emblem Presentation */}
+        <div className="relative min-h-[340px] lg:min-h-[440px] grid place-items-center bg-[radial-gradient(circle_at_50%_40%,#262626,#141414_60%,#0a0a0a)] p-6 overflow-hidden border-t lg:border-t-0 lg:border-l border-stone-800">
+          {/* Floating Official Authenticity Tag */}
+          <div className="absolute top-[10%] left-[8%] bg-stone-900/90 border border-stone-700/80 backdrop-blur-md px-3.5 py-2 rounded-xl text-xs font-bold text-stone-200 tracking-wide shadow-xl hidden sm:flex items-center gap-2 pointer-events-none">
+            <div className="w-4 h-4 rounded-full overflow-hidden border border-stone-500 bg-black">
+              <img src={OBRYNT_EMBLEM_SRC} alt="" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-[11px] tracking-wider uppercase font-extrabold text-stone-200">
+              100% VERIFIED AUTHENTIC
+            </span>
           </div>
 
-          {/* Interactive Shirt Shape */}
+          {/* Interactive Shirt Shape with Official OBRYNT Silver Emblem */}
           <div className="relative group transition-transform duration-300 hover:scale-105">
             <div
-              className="w-[210px] sm:w-[230px] h-[235px] sm:h-[255px] clip-shirt-preview shadow-2xl relative transition-colors duration-300"
+              className="w-[220px] sm:w-[240px] h-[245px] sm:h-[265px] clip-shirt-preview shadow-2xl relative transition-colors duration-300"
               style={{ backgroundColor: heroShirtColor }}
             >
-              {/* OBRYNT Center Typography */}
-              <div
-                className="absolute inset-0 flex items-center justify-center font-black tracking-[0.16em] text-xl transition-colors duration-300 pointer-events-none"
-                style={{ color: heroTextColor }}
-              >
-                OBRYNT
+              {/* OBRYNT Official Silver Emblem & Typography */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 pointer-events-none text-center">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border border-stone-700/80 bg-black shadow-lg mb-1.5">
+                  <img
+                    src={OBRYNT_EMBLEM_SRC}
+                    alt="Official Emblem"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div
+                  className="font-serif font-black tracking-[0.22em] text-lg sm:text-xl uppercase transition-colors duration-300"
+                  style={{ color: heroTextColor }}
+                >
+                  OBRYNT
+                </div>
+                <div
+                  className="text-[9px] font-bold tracking-[0.25em] uppercase opacity-75"
+                  style={{ color: heroTextColor }}
+                >
+                  TIMELESS STYLE
+                </div>
               </div>
             </div>
           </div>
 
           {/* Floating Tag 2 */}
-          <div className="absolute bottom-[14%] right-[8%] bg-white/10 border border-white/20 backdrop-blur-md px-3.5 py-2 rounded-xl text-xs font-bold text-white tracking-wide shadow-lg hidden sm:block pointer-events-none">
-            <span className="flex items-center gap-1.5">
-              <span>CREATE SOMETHING ORIGINAL</span>
-              <span className="text-[#d7ff3f]">✳</span>
+          <div className="absolute bottom-[14%] right-[8%] bg-stone-900/90 border border-stone-700/80 backdrop-blur-md px-3.5 py-2 rounded-xl text-xs font-bold text-stone-200 tracking-wide shadow-xl hidden sm:flex items-center gap-2 pointer-events-none">
+            <ShieldCheck className="w-3.5 h-3.5 text-stone-300" />
+            <span className="text-[11px] tracking-wider uppercase font-extrabold">
+              BLACK & PLATINUM SILVER
             </span>
           </div>
 

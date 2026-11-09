@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, Award } from 'lucide-react';
+import { ObryntLogo } from './ObryntBrand';
 
 interface FooterProps {
   onSelectCategory: (category: string) => void;
@@ -11,6 +12,7 @@ interface FooterProps {
   onOpenStaffLogin?: () => void;
   isDeliveryAuth?: boolean;
   onOpenDeliveryLogin?: () => void;
+  onOpenBrandAssets?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -23,6 +25,7 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenStaffLogin,
   isDeliveryAuth = false,
   onOpenDeliveryLogin,
+  onOpenBrandAssets,
 }) => {
   const currentYear = new Date().getFullYear();
 
@@ -40,21 +43,27 @@ export const Footer: React.FC<FooterProps> = ({
     <footer className="bg-[#111111] text-white pt-12 sm:pt-16 pb-12 mt-16 sm:mt-24 border-t border-stone-800">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-12 pb-12 border-b border-stone-800">
-          {/* Brand Info */}
+          {/* Brand Info with Official OBRYNT Silver Emblem */}
           <div className="md:col-span-2">
             <button
               onClick={scrollToTop}
-              className="text-2xl sm:text-3xl font-black tracking-[0.16em] text-white hover:opacity-90 transition-opacity mb-4 inline-block cursor-pointer text-left"
+              className="hover:opacity-90 transition-opacity mb-4 inline-block cursor-pointer text-left"
             >
-              OBRYNT<span className="text-[#d7ff3f]">.</span>
+              <ObryntLogo variant="horizontal" size="lg" theme="dark" showSubtitle={true} />
             </button>
             <p className="text-stone-400 text-sm leading-relaxed max-w-sm mb-4">
               Wear your identity.<br />
-              Everyday apparel, footwear, beauty essentials, and a live custom design studio built for personal expression.
+              Everyday apparel, footwear, beauty essentials, and a live bespoke design studio built for personal expression.
             </p>
-            <div className="flex items-center gap-2 text-xs font-bold text-stone-500">
-              <span className="w-2 h-2 rounded-full bg-[#d7ff3f]" />
-              <span>Free Delivery on Orders Above ₹999</span>
+            <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-stone-400">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-900 border border-stone-800">
+                <span className="w-2 h-2 rounded-full bg-stone-300" />
+                <span>Black · Platinum Silver · White</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-900 border border-stone-800">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span>Free Delivery Above ₹999</span>
+              </div>
             </div>
           </div>
 
@@ -91,6 +100,19 @@ export const Footer: React.FC<FooterProps> = ({
                   Explore Categories
                 </button>
               </li>
+              {onOpenBrandAssets && (
+                <li>
+                  <button
+                    onClick={onOpenBrandAssets}
+                    className="hover:text-white transition-colors cursor-pointer text-stone-300 flex items-center gap-1.5"
+                  >
+                    <span>Official Brand & Packaging</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-stone-800 text-stone-300 font-bold border border-stone-700">
+                      Silver
+                    </span>
+                  </button>
+                </li>
+              )}
               <li>
                 <a
                   href="./backup-obrynt-original.html"
@@ -165,9 +187,9 @@ export const Footer: React.FC<FooterProps> = ({
               <button
                 onClick={onOpenStaffLogin}
                 className="text-[10px] text-stone-500 hover:text-cyan-400 transition-colors cursor-pointer"
-                title="Staff Operations & Fulfillment Portal"
+                title="Company Staff Access"
               >
-                {isStaffAuthenticated ? '• Staff Operations (Active)' : '• Staff Portal'}
+                {isStaffAuthenticated ? '• Staff Access (Active)' : '• Staff Access'}
               </button>
             )}
 
