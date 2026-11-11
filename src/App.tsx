@@ -707,9 +707,19 @@ export default function App() {
 
         if (!matchesCat) {
           if (activeCategory === 'Men') {
-            matchesCat = pAud === 'men' || pAud === 'unisex' || pCat === 'men';
+            matchesCat = pAud === 'men' || pAud === 'unisex' || pCat.includes('men');
           } else if (activeCategory === 'Women') {
-            matchesCat = pAud === 'women' || pAud === 'unisex' || pCat === 'women';
+            matchesCat = pAud === 'women' || pAud === 'unisex' || pCat.includes('women');
+          } else if (activeCategory === 'Kids') {
+            matchesCat = pAud === 'kids' || pAud === 'unisex' || pCat.includes('kid');
+          } else if (activeCategory === 'Trending') {
+            matchesCat = (p.rating && p.rating >= 4.8) || (p.tag && p.tag.toLowerCase().includes('trend')) || p.stock > 40;
+          } else if (activeCategory === 'New Arrivals') {
+            matchesCat = true;
+          } else if (activeCategory === 'Footwear') {
+            matchesCat = pCat.includes('footwear') || pCat.includes('shoe') || p.type === 'shoe';
+          } else if (activeCategory === 'Bags & Accessories') {
+            matchesCat = pCat.includes('bag') || pCat.includes('accessor') || p.type === 'bag';
           } else {
             matchesCat = pCat === activeLower || p.category === activeCategory || p.cat === activeCategory;
           }
@@ -733,6 +743,19 @@ export default function App() {
       });
   }, [products, activeCategory, activeAudience, searchQuery, sortBy]);
 
+  // Curated Seasonal Slices for Homepage
+  const newArrivalsProducts = useMemo(() => {
+    return products.slice(0, 4);
+  }, [products]);
+
+  const trendingProducts = useMemo(() => {
+    return [...products].sort((a, b) => (b.rating || 4.5) - (a.rating || 4.5)).slice(0, 4);
+  }, [products]);
+
+  const bestSellersProducts = useMemo(() => {
+    return [...products].sort((a, b) => (b.reviewCount || 20) - (a.reviewCount || 20)).slice(4, 8);
+  }, [products]);
+
   const cartTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
   const scrollToStudio = () => {
@@ -754,11 +777,14 @@ export default function App() {
     'All',
     'Men',
     'Women',
+    'Kids',
+    'Trending',
+    'New Arrivals',
     'T-Shirts',
-    'Gym & Sports',
-    'Innerwear',
     'Footwear',
     'Bags & Accessories',
+    'Gym & Sports',
+    'Innerwear',
     'Beauty & Makeup',
     'Custom Design',
   ];
@@ -839,10 +865,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f6f2] text-[#111111] flex flex-col font-sans relative selection:bg-[#111111] selection:text-[#d7ff3f]">
-      {/* Subtle OBRYNT Background Watermark */}
-      <ObryntWatermark />
-
+    <div className="min-h-screen bg-white text-black flex flex-col font-sans relative selection:bg-black selection:text-white">
       {/* Top Navbar */}
       <Navbar
         cartCount={cart.reduce((s, x) => s + x.quantity, 0)}
@@ -861,32 +884,32 @@ export default function App() {
         onScrollToStudio={scrollToStudio}
       />
 
-      {/* Floating Owner Quick Bar - ONLY visible to the verified store owner */}
+      {/* Floating Owner Quick Bar - ONLY visible to verified store owner */}
       {isOwnerAuthenticated && (
-        <aside aria-label="Owner Quick Bar" className="bg-[#141414] text-white px-4 py-2 border-b border-stone-800 flex items-center justify-between text-xs">
-          <div className="max-w-[1400px] w-full mx-auto flex items-center justify-between gap-3">
+        <aside aria-label="Owner Quick Bar" className="bg-black text-white px-4 py-2 border-b border-neutral-800 flex items-center justify-between text-xs z-30">
+          <div className="max-w-[1440px] w-full mx-auto flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#d7ff3f] animate-pulse" />
-              <span className="font-bold text-stone-300">
-                Logged in as <strong className="text-white">Store Owner</strong> ({storeSettings.contactEmail})
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <span className="font-medium text-neutral-300">
+                Master Session: <strong className="text-white">Store Owner</strong> ({storeSettings.contactEmail})
               </span>
-              <span className="text-stone-500 hidden sm:inline">·</span>
-              <span className="text-stone-400 hidden sm:inline">
-                Live GMV: <strong className="text-[#d7ff3f]">₹{orders.reduce((s, o) => s + o.total, 0).toLocaleString('en-IN')}</strong> ({orders.length} orders)
+              <span className="text-neutral-600 hidden sm:inline">·</span>
+              <span className="text-neutral-400 hidden sm:inline font-mono">
+                GMV: <strong className="text-white">₹{orders.reduce((s, o) => s + o.total, 0).toLocaleString('en-IN')}</strong> ({orders.length} orders)
               </span>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsOwnerDashboardOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#d7ff3f] hover:bg-[#c9f530] text-[#111111] font-black rounded-full transition-transform active:scale-95 cursor-pointer shadow-xs uppercase tracking-wider text-[11px]"
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-neutral-200 text-black font-bold uppercase tracking-wider text-[11px] transition-colors cursor-pointer"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Open Dashboard</span>
+                <span>Owner Dashboard</span>
               </button>
               <button
                 onClick={handleLogoutOwner}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white rounded-full text-[11px] font-bold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white text-[11px] font-medium uppercase tracking-wider transition-colors cursor-pointer"
                 title="Lock Owner Mode and return to clean public shopper view"
               >
                 <LogOut className="w-3 h-3" />
@@ -898,47 +921,219 @@ export default function App() {
       )}
 
       {/* Main Content Container */}
-      <main className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1">
-        {/* Hero Section */}
+      <main className="max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-10 flex-1">
+        {/* Editorial Fashion Hero */}
         <HeroBanner
           onExploreClick={scrollToShop}
           onCustomStudioClick={scrollToStudio}
           onOpenBrandAssets={() => setIsBrandMaterialsOpen(true)}
         />
 
-        {/* Professional Trust Guarantees */}
+        {/* Minimalist Trust Guarantees */}
         <TrustBadges />
 
-        {/* Categories Grid (Shop your way) */}
+        {/* Seasonal Fashion Collections: Women's, Men's, Kids', Accessories */}
         <CategoryGrid
           activeCategory={activeCategory}
           onSelectCategory={setActiveCategory}
           onOpenCustomStudio={scrollToStudio}
         />
 
-        {/* Collection Section */}
-        <section id="shop" className="my-10 sm:my-14 scroll-mt-24">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-4 border-b border-[#e4e1da]">
-            <div>
-              <div className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#7a8e12] mb-1">
-                The collection
+        {/* HOMEPAGE EDITORIAL SECTIONS (Shown on default browsing mode) */}
+        {activeCategory === 'All' && !searchQuery && (
+          <div className="space-y-16 sm:space-y-24 my-12 sm:my-16">
+            
+            {/* 1. NEW ARRIVALS · RUNWAY COLLECTION */}
+            <section className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-neutral-200">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.26em] text-neutral-400 block mb-1">
+                    AUTUMN / WINTER 2026 RUNWAY
+                  </span>
+                  <h2 className="font-luxury text-2xl sm:text-3xl font-bold tracking-[0.08em] text-black uppercase">
+                    New Arrivals
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveCategory('New Arrivals');
+                    scrollToShop();
+                  }}
+                  className="text-xs font-bold uppercase tracking-[0.16em] text-black hover:underline underline-offset-4 flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+                >
+                  <span>Explore All New Arrivals</span>
+                  <ArrowUpDown className="w-3.5 h-3.5 rotate-90" />
+                </button>
               </div>
-              <h2 className="text-2xl sm:text-3xl lg:text-[34px] font-black tracking-[-0.04em] text-[#111111]">
-                Find your next favourite
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                {newArrivalsProducts.map((product) => {
+                  const isWish = wishlist.some(
+                    (p) => p.sku === product.sku || (p.id && p.id === product.id)
+                  );
+                  return (
+                    <ProductCard
+                      key={`new-${product.sku || product.id}`}
+                      product={product}
+                      onOpenDetail={setSelectedProduct}
+                      onAddToCart={(p, s) => handleAddToCart(p, s, 1)}
+                      isWishlisted={isWish}
+                      onToggleWishlist={handleToggleWishlist}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* 2. TRENDING NOW · EDITORIAL SELECTS */}
+            <section className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-neutral-200">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.26em] text-neutral-400 block mb-1">
+                    MOST COVETED BY STYLISTS
+                  </span>
+                  <h2 className="font-luxury text-2xl sm:text-3xl font-bold tracking-[0.08em] text-black uppercase">
+                    Trending This Season
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveCategory('Trending');
+                    scrollToShop();
+                  }}
+                  className="text-xs font-bold uppercase tracking-[0.16em] text-black hover:underline underline-offset-4 flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+                >
+                  <span>View All Trending</span>
+                  <ArrowUpDown className="w-3.5 h-3.5 rotate-90" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                {trendingProducts.map((product) => {
+                  const isWish = wishlist.some(
+                    (p) => p.sku === product.sku || (p.id && p.id === product.id)
+                  );
+                  return (
+                    <ProductCard
+                      key={`trend-${product.sku || product.id}`}
+                      product={product}
+                      onOpenDetail={setSelectedProduct}
+                      onAddToCart={(p, s) => handleAddToCart(p, s, 1)}
+                      isWishlisted={isWish}
+                      onToggleWishlist={handleToggleWishlist}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* 3. ELEGANT PROMOTIONAL SECTION: "THE ATELIER CAPSULE" */}
+            <section className="bg-black text-white p-8 sm:p-12 lg:p-16 border border-neutral-900 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div className="space-y-6">
+                <span className="text-[10px] sm:text-[11px] font-mono tracking-[0.28em] uppercase text-neutral-400 block">
+                  CAPSULE EDITORIAL · BESPOKE EDITION
+                </span>
+                
+                <h3 className="font-luxury text-2xl sm:text-4xl font-bold tracking-[0.12em] uppercase leading-tight text-white">
+                  Monochrome Poetics: Pure Form & Function
+                </h3>
+
+                <p className="text-xs sm:text-sm text-neutral-300 font-normal leading-relaxed max-w-lg">
+                  Every OBRYNT silhouette is engineered with uncompromising garment integrity. Combed 280 GSM organic cotton, Italian Margom-style calfskin sneakers, and bespoke silkscreen customization.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <button
+                    onClick={scrollToShop}
+                    className="px-6 py-3.5 bg-white hover:bg-neutral-200 text-black font-bold text-xs uppercase tracking-[0.2em] transition-colors cursor-pointer"
+                  >
+                    DISCOVER CAPSULE
+                  </button>
+
+                  <button
+                    onClick={scrollToStudio}
+                    className="px-6 py-3.5 bg-transparent hover:bg-white/10 text-white border border-white/40 font-bold text-xs uppercase tracking-[0.2em] transition-colors cursor-pointer flex items-center gap-2"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-neutral-300" />
+                    <span>CUSTOM PRINT STUDIO</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative aspect-[4/3] bg-neutral-900 overflow-hidden border border-neutral-800">
+                <img
+                  src="/images/editorial_accessories_footwear.jpg"
+                  alt="OBRYNT Atelier Objects"
+                  className="w-full h-full object-cover object-center brightness-[0.88] hover:scale-105 transition-transform duration-700"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            </section>
+
+            {/* 4. BEST SELLERS · TIMELESS PIECES */}
+            <section className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-neutral-200">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.26em] text-neutral-400 block mb-1">
+                    CLIENT ESSENTIALS
+                  </span>
+                  <h2 className="font-luxury text-2xl sm:text-3xl font-bold tracking-[0.08em] text-black uppercase">
+                    Best Sellers
+                  </h2>
+                </div>
+                <button
+                  onClick={scrollToShop}
+                  className="text-xs font-bold uppercase tracking-[0.16em] text-black hover:underline underline-offset-4 flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+                >
+                  <span>View All Best Sellers</span>
+                  <ArrowUpDown className="w-3.5 h-3.5 rotate-90" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                {bestSellersProducts.map((product) => {
+                  const isWish = wishlist.some(
+                    (p) => p.sku === product.sku || (p.id && p.id === product.id)
+                  );
+                  return (
+                    <ProductCard
+                      key={`best-${product.sku || product.id}`}
+                      product={product}
+                      onOpenDetail={setSelectedProduct}
+                      onAddToCart={(p, s) => handleAddToCart(p, s, 1)}
+                      isWishlisted={isWish}
+                      onToggleWishlist={handleToggleWishlist}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* COMPLETE CATALOGUE & CURATED BROWSE SECTION */}
+        <section id="shop" className="my-14 sm:my-20 scroll-mt-24 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-neutral-200">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-neutral-400 mb-1">
+                {activeCategory === 'All' ? 'FULL CATALOGUE' : `COLLECTION / ${activeCategory.toUpperCase()}`}
+              </div>
+              <h2 className="font-luxury text-2xl sm:text-3xl font-bold tracking-[0.06em] text-black uppercase">
+                {activeCategory === 'All' ? 'All Fashion Items' : activeCategory}
               </h2>
-              <p className="text-xs sm:text-sm text-stone-500 mt-1">
-                {filteredProducts.length} featured products · Verified authentic · Free delivery over ₹{storeSettings.freeDeliveryThreshold}
+              <p className="text-xs sm:text-sm text-neutral-500 mt-1 font-normal">
+                {filteredProducts.length} pieces available · Complimentary worldwide shipping over ₹{storeSettings.freeDeliveryThreshold}
               </p>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-end flex-wrap">
+            <div className="flex items-center gap-3 self-start sm:self-end flex-wrap">
               {/* Sort By Dropdown */}
-              <div className="flex items-center gap-1.5 bg-white border border-[#e4e1da] rounded-full px-3 py-1.5 text-xs font-bold shadow-xs">
-                <ArrowUpDown className="w-3.5 h-3.5 text-stone-500" />
+              <div className="flex items-center gap-1.5 bg-white border border-neutral-300 px-3 py-2 text-xs font-medium">
+                <ArrowUpDown className="w-3.5 h-3.5 text-neutral-500" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-transparent border-0 outline-hidden text-xs font-bold text-[#111111] cursor-pointer"
+                  className="bg-transparent border-0 outline-hidden text-xs font-semibold text-black cursor-pointer uppercase tracking-wider"
                 >
                   <option value="featured">Featured First</option>
                   <option value="price-asc">Price: Low to High</option>
@@ -954,36 +1149,16 @@ export default function App() {
                     setActiveAudience('All');
                     setSearchQuery('');
                   }}
-                  className="text-xs font-black text-[#111111] underline underline-offset-4 hover:text-stone-600 cursor-pointer ml-1"
+                  className="text-xs font-bold uppercase tracking-wider text-black underline underline-offset-4 hover:text-neutral-500 cursor-pointer ml-1"
                 >
-                  Clear filters
+                  Reset Filters
                 </button>
               )}
             </div>
           </div>
 
-          {/* Gender / Audience Curated Strip */}
-          <div className="flex items-center gap-2 pt-4 pb-2 overflow-x-auto no-scrollbar text-xs">
-            <span className="text-[11px] font-black uppercase text-stone-400 tracking-wider shrink-0 mr-1">
-              Curate By:
-            </span>
-            {audienceOptions.map((aud) => (
-              <button
-                key={aud}
-                onClick={() => setActiveAudience(aud)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 ${
-                  activeAudience === aud
-                    ? 'bg-[#111111] text-[#d7ff3f]'
-                    : 'bg-white/80 hover:bg-white text-stone-600 border border-[#e4e1da]'
-                }`}
-              >
-                {aud === 'All' ? 'All Genders & Lines' : aud}
-              </button>
-            ))}
-          </div>
-
-          {/* Interactive Category Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-3">
+          {/* Clean Segmented Category Tabs Bar */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 border-b border-neutral-100">
             {filterTabNames.map((cat) => {
               const isActive = activeCategory === cat;
               return (
@@ -997,10 +1172,10 @@ export default function App() {
                       setActiveCategory(cat);
                     }
                   }}
-                  className={`px-3.5 py-2 rounded-full text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap shadow-xs ${
+                  className={`px-3 py-1.5 text-xs uppercase tracking-[0.14em] font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     isActive
-                      ? 'bg-[#111111] text-white border border-[#111111]'
-                      : 'bg-white hover:bg-stone-100 text-[#111111] border border-[#e4e1da]'
+                      ? 'bg-black text-white font-bold'
+                      : 'bg-neutral-100 text-neutral-600 hover:text-black hover:bg-neutral-200'
                   }`}
                 >
                   {cat}
@@ -1011,12 +1186,12 @@ export default function App() {
 
           {/* Product Grid */}
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-2xl border border-[#e4e1da] p-8 my-6">
-              <p className="text-base font-bold text-stone-700">
-                No products match that filter or search yet.
+            <div className="text-center py-20 bg-neutral-50 border border-neutral-200 p-8 my-6">
+              <p className="font-luxury text-base font-bold text-black uppercase tracking-wider">
+                No items match your criteria.
               </p>
-              <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
-                Try clearing your search query or selecting another category from the bar above.
+              <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto font-normal">
+                Try selecting a different collection or clearing your search query.
               </p>
               <button
                 onClick={() => {
@@ -1024,13 +1199,13 @@ export default function App() {
                   setActiveAudience('All');
                   setSearchQuery('');
                 }}
-                className="mt-4 px-5 py-2.5 bg-[#111111] text-[#d7ff3f] text-xs font-black rounded-full cursor-pointer uppercase tracking-wider"
+                className="mt-6 px-6 py-3 bg-black text-white text-xs font-bold uppercase tracking-[0.18em] cursor-pointer"
               >
                 Reset All Filters
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 my-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 my-6">
               {filteredProducts.map((product) => {
                 const isWish = wishlist.some(
                   (p) => p.sku === product.sku || (p.id && p.id === product.id)
@@ -1057,7 +1232,7 @@ export default function App() {
           onShowNotice={showNotice}
         />
 
-        {/* Account Section (Everything in one account) */}
+        {/* Account Section (Client Suite) */}
         <AccountSection
           ordersCount={orders.length}
           transactionsCount={transactions.length}
@@ -1086,8 +1261,8 @@ export default function App() {
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#111111] text-white px-5 py-3 rounded-full text-xs font-extrabold shadow-2xl z-50 flex items-center gap-2 border border-stone-800 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <span className="w-2 h-2 rounded-full bg-[#d7ff3f]" />
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black text-white px-5 py-3 text-xs font-semibold shadow-2xl z-50 flex items-center gap-2 border border-neutral-800 animate-in fade-in slide-in-from-bottom-2 duration-200 tracking-wide uppercase">
+          <span className="w-1.5 h-1.5 rounded-full bg-white" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -1139,8 +1314,14 @@ export default function App() {
 
       <ProductDetailModal
         product={selectedProduct}
+        allProducts={products}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={(p, s, q) => handleAddToCart(p, s, q)}
+        onBuyNow={(p, s, q) => {
+          handleAddToCart(p, s, q);
+          setSelectedProduct(null);
+          setIsCheckoutOpen(true);
+        }}
         isWishlisted={
           selectedProduct
             ? wishlist.some(
@@ -1150,6 +1331,7 @@ export default function App() {
         }
         onToggleWishlist={handleToggleWishlist}
         onOpenCustomStudio={scrollToStudio}
+        onSelectProduct={setSelectedProduct}
       />
 
       {/* Cryptographically Verified Owner Security Gateway */}

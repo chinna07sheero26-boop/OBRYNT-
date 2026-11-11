@@ -39,7 +39,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, onClose, sett
               onClick={handlePrint}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#111111] hover:bg-black text-white text-xs font-bold rounded-lg cursor-pointer transition-colors shadow-xs"
             >
-              <Printer className="w-3.5 h-3.5 text-[#d7ff3f]" />
+              <Printer className="w-3.5 h-3.5 text-stone-300" />
               <span>Print / PDF</span>
             </button>
             <button
@@ -65,7 +65,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, onClose, sett
                 <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
               </div>
               <div>
-                <div className="text-2xl font-black font-serif tracking-[0.2em] text-[#111111]">
+                <div className="text-2xl font-black font-luxury tracking-[0.2em] text-[#111111]">
                   OBRYNT
                 </div>
                 <div className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">
@@ -78,7 +78,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, onClose, sett
             </div>
 
             <div className="text-right">
-              <span className="text-xs font-black uppercase tracking-widest px-2.5 py-1 rounded bg-[#d7ff3f] text-[#111111]">
+              <span className="text-xs font-black uppercase tracking-widest px-2.5 py-1 rounded bg-black text-white">
                 {order.status}
               </span>
               <div className="text-xs font-mono text-stone-600 mt-2">
@@ -117,7 +117,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, onClose, sett
               <div className="text-stone-500 mt-0.5">
                 Transaction Ref: TX-{order.orderId.replace(/^OB-/, '')}
               </div>
-              <div className="text-emerald-700 font-bold mt-1">
+              <div className="text-black font-bold mt-1">
                 Payment Status: Verified / Settled
               </div>
             </div>
@@ -141,7 +141,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, onClose, sett
                     <td className="p-3">
                       <strong className="font-black text-stone-900 block">{item.product.name}</strong>
                       {item.customDesign && (
-                        <span className="text-[10px] text-[#7a8e12] font-bold block">
+                        <span className="text-[10px] text-stone-600 font-bold block">
                           Bespoke Print: "{item.customDesign.text}" ({item.customDesign.side} View, {item.customDesign.colorName})
                         </span>
                       )}

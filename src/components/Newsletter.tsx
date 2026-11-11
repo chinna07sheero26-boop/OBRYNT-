@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 
 interface NewsletterProps {
   onShowNotice: (msg: string) => void;
@@ -13,47 +13,54 @@ export const Newsletter: React.FC<NewsletterProps> = ({ onShowNotice }) => {
     e.preventDefault();
     if (!email) return;
     setIsSubscribed(true);
-    onShowNotice('Thanks! You are now subscribed to the OBRYNT drop list.');
+    onShowNotice('Thank you. You are now subscribed to the OBRYNT Private Journal.');
   };
 
   return (
-    <section className="my-12 sm:my-16 bg-[#d7ff3f] rounded-[22px] p-6 sm:p-10 lg:p-12 text-[#111111] shadow-md">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-8">
-        <div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-[-0.04em] mb-2 uppercase">
-            Be first in the drop.
-          </h2>
-          <p className="text-sm font-medium text-stone-800 max-w-md">
-            Get exclusive early access to limited capsule releases, artist studio collaborations, and custom fashion drops.
-          </p>
-        </div>
+    <section className="my-14 sm:my-20 bg-neutral-50 border border-neutral-200 p-8 sm:p-12 lg:p-16 text-black">
+      <div className="max-w-3xl mx-auto text-center space-y-4">
+        <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.28em] text-neutral-400 block">
+          THE OBRYNT JOURNAL & PRIVATE CLIENT EDITIONS
+        </span>
+        
+        <h2 className="font-luxury text-2xl sm:text-4xl font-bold tracking-[0.08em] text-black uppercase">
+          Join The Inner Circle
+        </h2>
+
+        <p className="text-xs sm:text-sm text-neutral-500 font-normal leading-relaxed max-w-xl mx-auto">
+          Receive exclusive invitations to private seasonal runway drops, limited capsule editions, and tailored bespoke atelier collaborations.
+        </p>
 
         {isSubscribed ? (
-          <div className="bg-black/90 text-white rounded-full px-6 py-4 flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-[#d7ff3f]" />
-            <span className="text-sm font-bold">
-              Welcome to the inner circle! Use code <strong>OBRYNT10</strong> for 10% off.
+          <div className="bg-black text-white p-4 max-w-md mx-auto flex items-center justify-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-white" />
+            <span className="text-xs font-bold tracking-wider uppercase">
+              Welcome. Use private code <strong>OBRYNT10</strong> for 10% off.
             </span>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2.5 w-full lg:max-w-md">
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto pt-4">
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Your email address"
-              className="flex-1 bg-white text-[#111111] px-5 py-3.5 rounded-full text-sm font-medium border border-black/10 outline-hidden focus:ring-2 focus:ring-black placeholder:text-stone-400 shadow-xs"
+              placeholder="Enter your email address"
+              className="flex-1 bg-white text-black px-4 py-3.5 text-xs border border-neutral-300 outline-hidden focus:border-black placeholder:text-neutral-400"
               aria-label="Email address for newsletter"
             />
             <button
               type="submit"
-              className="px-6 py-3.5 bg-[#111111] hover:bg-black text-white text-xs sm:text-sm font-black rounded-full transition-transform active:scale-95 cursor-pointer shadow-md uppercase tracking-wider shrink-0"
+              className="px-6 py-3.5 bg-black hover:bg-neutral-800 text-white text-xs font-bold uppercase tracking-[0.18em] transition-colors cursor-pointer shrink-0"
             >
-              JOIN THE LIST
+              SUBSCRIBE
             </button>
           </form>
         )}
+
+        <p className="text-[10px] text-neutral-400 tracking-wider uppercase pt-2">
+          By subscribing, you agree to our privacy policy. You can withdraw consent anytime.
+        </p>
       </div>
     </section>
   );

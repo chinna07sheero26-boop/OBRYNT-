@@ -1,5 +1,13 @@
 import * as XLSX from 'xlsx';
-import { Product, BulkImportItem, BulkImportReport, SupplierFeedProtocol } from '../types';
+import {
+  Product,
+  BulkImportItem,
+  BulkImportReport,
+  SupplierFeedProtocol,
+  MultiStoreBatchResponse,
+  MultiStoreReportItem,
+  MultiStoreFieldEntry,
+} from '../types';
 import { classifyProductLocally } from '../utils/aiTaxonomyEngine';
 
 export interface RawImportProduct {
@@ -9,6 +17,9 @@ export interface RawImportProduct {
   sku: string;
   price: number;
   originalPrice?: number;
+  supplierPrice?: number;
+  wholesalePrice?: number;
+  markupAmount?: number;
   stock: number;
   brand: string;
   categoryHint?: string;
@@ -139,8 +150,13 @@ function normalizeRawObject(row: Record<string, any>, index: number, sourceFile:
   const nameVal = findValue(['name', 'title', 'product_name', 'product title', 'item_name', 'item', 'product']) || `Imported Item #${index + 1}`;
   const descVal = findValue(['description', 'desc', 'details', 'specs', 'product_description', 'summary']) || '';
   const skuVal = findValue(['sku', 'item_code', 'code', 'product_id', 'id']) || `OB-IMP-${Date.now().toString(36).slice(-4)}-${index + 1}`;
-  const priceVal = Number(findValue(['price', 'retail_price', 'selling_price', 'sale_price', 'amount', 'rate'])) || 799;
-  const origPriceVal = Number(findValue(['original_price', 'mrp', 'list_price', 'regular_price', 'base_price'])) || Math.round(priceVal * 1.35);
+  const rawCostVal = Number(findValue(['supplier_cost', 'cost', 'wholesale_price', 'wholesale_cost', 'supplier_price', 'buy_price', 'purchase_price', 'trade_price'])) || 0;
+  const rawPriceVal = Number(findValue(['price', 'retail_price', 'selling_price', 'sale_price', 'amount', 'rate'])) || 0;
+
+  // Global Automatic Pricing Rule: OBRYNT Selling Price = Supplier Price + ₹40
+  const supplierPrice = rawCostVal > 0 ? rawCostVal : rawPriceVal > 0 ? rawPriceVal : 269;
+  const sellingPrice = supplierPrice + 40;
+  const origPriceVal = Number(findValue(['original_price', 'mrp', 'list_price', 'regular_price', 'base_price'])) || Math.round(sellingPrice * 1.35);
   const stockVal = Number(findValue(['stock', 'quantity', 'qty', 'inventory', 'units', 'count'])) || 50;
   const brandVal = findValue(['brand', 'brand_name', 'vendor', 'manufacturer', 'company']) || 'OBRYNT';
   const catHint = findValue(['category', 'sub_category', 'department', 'type', 'cat', 'collection']);
@@ -191,8 +207,11 @@ function normalizeRawObject(row: Record<string, any>, index: number, sourceFile:
     name: String(nameVal).trim(),
     description: String(descVal).trim(),
     sku: String(skuVal).trim().toUpperCase(),
-    price: priceVal,
+    price: sellingPrice,
     originalPrice: origPriceVal,
+    supplierPrice,
+    wholesalePrice: supplierPrice,
+    markupAmount: 40,
     stock: stockVal,
     brand: String(brandVal).trim(),
     categoryHint: catHint ? String(catHint).trim() : undefined,
@@ -306,6 +325,10 @@ export async function categorizeImportBatch(
       seenBatchNames.add(normNameKey);
 
       // 3. Assemble Product Model
+      const supplierPrice = raw.supplierPrice || (raw.price > 40 ? raw.price - 40 : raw.price);
+      // Global Automatic Pricing Rule: OBRYNT Selling Price = Supplier Price + ₹40
+      const sellingPrice = supplierPrice + 40;
+
       const productModel: Product = {
         sku: raw.sku,
         name: raw.name,
@@ -317,8 +340,11 @@ export async function categorizeImportBatch(
         aud: aiResult.audience || 'Unisex',
         brand: finalBrand,
         brandName: finalBrand,
-        price: raw.price,
-        originalPrice: raw.originalPrice || Math.round(raw.price * 1.35),
+        price: sellingPrice,
+        originalPrice: raw.originalPrice || Math.round(sellingPrice * 1.35),
+        supplierPrice: supplierPrice,
+        wholesalePrice: supplierPrice,
+        markupAmount: 40,
         stock: raw.stock,
         status: isDuplicate ? 'draft' : aiResult.needsReview ? 'draft' : 'active',
         isPublished: !isDuplicate && !aiResult.needsReview,
@@ -354,6 +380,13 @@ export async function categorizeImportBatch(
         isDuplicate,
         duplicateOfSku,
         status: itemStatus,
+        approvalStatus: 'pending_approval',
+        supplierPrice: supplierPrice,
+        supplierCost: supplierPrice,
+        markupAmount: 40,
+        suggestedSellingPrice: sellingPrice,
+        marginPct: Math.round((40 / sellingPrice) * 100),
+        missingFields: [],
         error: isDuplicate ? `Duplicate item identified (matches ${duplicateOfSku})` : undefined,
       });
 
@@ -371,34 +404,42 @@ export async function categorizeImportBatch(
  */
 export function generateMixedDemoFeed(count: number = 30): RawImportProduct[] {
   const SAMPLE_ITEMS = [
-    { name: 'Slim Fit Oxford Cotton Shirt', desc: 'Premium button down long sleeve shirt for work and evenings', price: 1299, mrp: 1899, brand: 'OBRYNT Men', cat: 'Men' },
-    { name: 'Vintage Heavyweight Washed Graphic Tee', desc: '240 GSM drop shoulder streetwear boxy tee', price: 799, mrp: 1199, brand: 'OBRYNT Street', cat: 'T-Shirts' },
-    { name: 'Air Mesh High Cushion Running Shoes', desc: 'Breathable road running shoes with responsive EVA sole', price: 2499, mrp: 3499, brand: 'Velocity Footwear', cat: 'Footwear' },
-    { name: 'Leather Automatic Mechanical Watch', desc: 'Classic skeleton dial wristwatch with genuine leather strap', price: 3499, mrp: 4999, brand: 'Chrono Lux', cat: 'Accessories' },
-    { name: 'Floral Print Georgette Anarkali Kurti', desc: 'Graceful flared Indian ethnic kurti with gota patti detailing', price: 1499, mrp: 2199, brand: 'Aura Ethnic', cat: 'Women' },
-    { name: 'Relaxed Tapered Fit Stretch Jeans', desc: 'Mid-rise 5-pocket denim trousers with 2% elastane flex', price: 1599, mrp: 2299, brand: 'Denim Lab', cat: 'Men' },
-    { name: 'Dry-Tech Athletic Compression Track Pants', desc: 'Moisture wicking training joggers for running and workout', price: 899, mrp: 1299, brand: 'ProFit Active', cat: 'Gym & Sports' },
-    { name: 'Organic Bamboo Fibre Boxers (Pack of 3)', desc: 'Ultra soft anti-chafing breathable innerwear trunks', price: 699, mrp: 999, brand: 'Comfort Base', cat: 'Innerwear' },
-    { name: 'Botanical Hyaluronic Acid Hydrating Serum', desc: 'Pure plant-based facial moisture serum for glowing skin', price: 649, mrp: 899, brand: 'Pure Botanic', cat: 'Beauty' },
-    { name: 'Water-Resistant Commuter Laptop Backpack', desc: '15.6 inch padded laptop compartment with anti-theft zipper', price: 1799, mrp: 2599, brand: 'Urban Gear', cat: 'Bags' },
-    { name: 'Slip-On Orthopedic Comfort Slides', desc: 'Ergonomic daily wear waterproof bathroom and garden slippers', price: 499, mrp: 799, brand: 'SoleComfort', cat: 'Footwear' },
-    { name: 'Classic Aviator Polarized Sunglasses', desc: 'UV400 metal frame luxury shades with anti-glare lenses', price: 999, mrp: 1499, brand: 'Vision Optic', cat: 'Accessories' },
-    { name: 'Cotton Ribbed Halter Neck Crop Top', desc: 'Sleeveless breathable summer crop top for women', price: 499, mrp: 749, brand: 'OBRYNT Studio', cat: 'Women' },
-    { name: 'Heavy French Terry Pullover Hoodie', desc: '380 GSM fleece lined winter hooded sweatshirt with kangaroo pocket', price: 1899, mrp: 2699, brand: 'OBRYNT Atelier', cat: 'Men' },
-    { name: 'Genuine Full Grain Leather Dress Belt', desc: 'Reversible formal pin buckle belt for suits and trousers', price: 799, mrp: 1199, brand: 'Heritage Leather', cat: 'Accessories' },
+    { name: 'Classic Supima Cotton Everyday Crew Tee', desc: 'Silky smooth 100% Supima long-staple cotton tee with tailored standard fit', price: 269, mrp: 599, brand: 'Tirupur Knitwear Hub', cat: 'T-Shirts' },
+    { name: 'Slim Fit Oxford Cotton Shirt', desc: 'Premium button down long sleeve shirt for work and evenings', price: 520, mrp: 1899, brand: 'OBRYNT Men', cat: 'Men' },
+    { name: 'Vintage Heavyweight Washed Graphic Tee', desc: '240 GSM drop shoulder streetwear boxy tee', price: 380, mrp: 1199, brand: 'OBRYNT Street', cat: 'T-Shirts' },
+    { name: 'Air Mesh High Cushion Running Shoes', desc: 'Breathable road running shoes with responsive EVA sole', price: 890, mrp: 3499, brand: 'Velocity Footwear', cat: 'Footwear' },
+    { name: 'Leather Automatic Mechanical Watch', desc: 'Classic skeleton dial wristwatch with genuine leather strap', price: 1450, mrp: 4999, brand: 'Chrono Lux', cat: 'Accessories' },
+    { name: 'Floral Print Georgette Anarkali Kurti', desc: 'Graceful flared Indian ethnic kurti with gota patti detailing', price: 620, mrp: 2199, brand: 'Aura Ethnic', cat: 'Women' },
+    { name: 'Relaxed Tapered Fit Stretch Jeans', desc: 'Mid-rise 5-pocket denim trousers with 2% elastane flex', price: 890, mrp: 2299, brand: 'Denim Lab', cat: 'Men' },
+    { name: 'Dry-Tech Athletic Compression Track Pants', desc: 'Moisture wicking training joggers for running and workout', price: 420, mrp: 1299, brand: 'ProFit Active', cat: 'Gym & Sports' },
+    { name: 'Organic Bamboo Fibre Boxers (Pack of 3)', desc: 'Ultra soft anti-chafing breathable innerwear trunks', price: 310, mrp: 999, brand: 'Comfort Base', cat: 'Innerwear' },
+    { name: 'Botanical Hyaluronic Acid Hydrating Serum', desc: 'Pure plant-based facial moisture serum for glowing skin', price: 290, mrp: 899, brand: 'Pure Botanic', cat: 'Beauty' },
+    { name: 'Water-Resistant Commuter Laptop Backpack', desc: '15.6 inch padded laptop compartment with anti-theft zipper', price: 750, mrp: 2599, brand: 'Urban Gear', cat: 'Bags' },
+    { name: 'Slip-On Orthopedic Comfort Slides', desc: 'Ergonomic daily wear waterproof bathroom and garden slippers', price: 250, mrp: 799, brand: 'SoleComfort', cat: 'Footwear' },
+    { name: 'Classic Aviator Polarized Sunglasses', desc: 'UV400 metal frame luxury shades with anti-glare lenses', price: 480, mrp: 1499, brand: 'Vision Optic', cat: 'Accessories' },
+    { name: 'Cotton Ribbed Halter Neck Crop Top', desc: 'Sleeveless breathable summer crop top for women', price: 260, mrp: 749, brand: 'OBRYNT Studio', cat: 'Women' },
+    { name: 'Heavy French Terry Pullover Hoodie', desc: '380 GSM fleece lined winter hooded sweatshirt with kangaroo pocket', price: 650, mrp: 2699, brand: 'OBRYNT Atelier', cat: 'Men' },
+    { name: 'Genuine Full Grain Leather Dress Belt', desc: 'Reversible formal pin buckle belt for suits and trousers', price: 340, mrp: 1199, brand: 'Heritage Leather', cat: 'Accessories' },
   ];
 
   const generated: RawImportProduct[] = [];
   for (let i = 0; i < count; i++) {
     const base = SAMPLE_ITEMS[i % SAMPLE_ITEMS.length];
     const itemNum = i + 1;
+    const supplierPrice = base.price; // Supplier's price
+    // Global Automatic Pricing Rule: OBRYNT Selling Price = Supplier Price + ₹40
+    const sellingPrice = supplierPrice + 40;
+
     generated.push({
       id: `demo-${Date.now()}-${itemNum}`,
       name: `${base.name} #${itemNum}`,
       description: base.desc,
       sku: `OB-BULK-${String(itemNum).padStart(4, '0')}`,
-      price: base.price,
+      price: sellingPrice,
       originalPrice: base.mrp,
+      supplierPrice: supplierPrice,
+      wholesalePrice: supplierPrice,
+      markupAmount: 40,
       stock: 30 + (itemNum % 70),
       brand: base.brand,
       categoryHint: base.cat,
@@ -410,7 +451,9 @@ export function generateMixedDemoFeed(count: number = 30): RawImportProduct[] {
       raw: {
         'Product Title': `${base.name} #${itemNum}`,
         'SKU': `OB-BULK-${String(itemNum).padStart(4, '0')}`,
-        'Selling Price': base.price,
+        'Supplier Price': supplierPrice,
+        'OBRYNT Selling Price': sellingPrice,
+        'Auto Markup': '+₹40',
         'MRP': base.mrp,
         'Stock': 50,
         'Brand': base.brand,
@@ -821,8 +864,13 @@ export function convertExtractedItemsToBulkItems(
     // Assign supplier
     p.supplierId = defaultSupplierId || p.supplierId;
     p.supplierName = defaultSupplierName || p.supplierName;
-    p.wholesalePrice = item.supplierCost || p.wholesalePrice;
-    p.price = item.suggestedSellingPrice || p.price;
+    const supplierPrice = Number(item.supplierPrice || item.supplierCost || p.supplierPrice || p.wholesalePrice || (p.price > 40 ? p.price - 40 : 269));
+    const sellingPrice = supplierPrice + 40;
+
+    p.supplierPrice = supplierPrice;
+    p.wholesalePrice = supplierPrice;
+    p.markupAmount = 40;
+    p.price = sellingPrice;
     p.isPublished = false; // Always starts unapproved!
     p.status = 'draft';
 
@@ -839,9 +887,11 @@ export function convertExtractedItemsToBulkItems(
       duplicateOfSku,
       status: isDuplicate ? 'needs_review' : 'categorized',
       approvalStatus: 'pending_approval',
-      supplierCost: item.supplierCost,
-      marginPct: item.marginPct,
-      suggestedSellingPrice: item.suggestedSellingPrice,
+      supplierPrice: supplierPrice,
+      supplierCost: supplierPrice,
+      markupAmount: 40,
+      marginPct: Math.round((40 / sellingPrice) * 100),
+      suggestedSellingPrice: sellingPrice,
       missingFields: item.missingFields || [],
       extractionSourceUrl: item.url,
       sourceSupplierId: defaultSupplierId,
@@ -851,4 +901,114 @@ export function convertExtractedItemsToBulkItems(
   });
 
   return results;
+}
+
+/**
+  * Calls backend multi-store 30-URL importer endpoint
+  */
+export async function importMultiStoreUrls(
+  storeEntries: { index: number; url: string }[],
+  defaultMarginPct: number = 40
+): Promise<MultiStoreBatchResponse> {
+  const resp = await fetch('/api/supplier/import-multi-store', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ storeEntries, defaultMarginPct }),
+  });
+
+  if (!resp.ok) {
+    const errorJson = await resp.json().catch(() => ({}));
+    throw new Error(errorJson.error || `Server responded with HTTP ${resp.status}`);
+  }
+
+  return resp.json();
+}
+
+/**
+ * Converts products discovered from the multi-store importer into standard BulkImportItem staging rows
+ */
+export function convertMultiStoreProductsToBulkItems(
+  products: any[],
+  existingProducts: Product[] = []
+): BulkImportItem[] {
+  const existingSkuMap = new Set(existingProducts.map((p) => (p.sku || '').toUpperCase()));
+  const existingNameMap = new Map(
+    existingProducts.map((p) => [`${p.name.toLowerCase()}|${(p.brand || 'OBRYNT').toLowerCase()}`, p.sku])
+  );
+
+  return products.map((p, idx) => {
+    const normKey = `${(p.name || '').toLowerCase()}|${(p.brand || 'OBRYNT').toLowerCase()}`;
+    let isDuplicate = false;
+    let duplicateOfSku: string | undefined = undefined;
+
+    if (p.sku && existingSkuMap.has(p.sku.toUpperCase())) {
+      isDuplicate = true;
+      duplicateOfSku = p.sku;
+    } else if (existingNameMap.has(normKey)) {
+      isDuplicate = true;
+      duplicateOfSku = existingNameMap.get(normKey);
+    }
+
+    const wholesaleCost = Number(p.supplierPrice || p.wholesalePrice || (p.price > 40 ? p.price - 40 : p.price)) || 269;
+    // Global Automatic Pricing Rule: OBRYNT Selling Price = Supplier Price + ₹40
+    const sellingPrice = wholesaleCost + 40;
+    const marginPct = Math.round((40 / sellingPrice) * 100);
+
+    const productPayload: Product = {
+      id: p.id || `multi-${Date.now()}-${idx + 1}`,
+      sku: p.sku || `OB-SUP-${Date.now().toString().slice(-4)}-${idx + 1}`,
+      name: p.name,
+      description: p.description || 'Premium curated supplier garment.',
+      category: p.category || 'Men',
+      cat: p.cat || p.category || 'Men',
+      subcategory: p.subcategory || 'Shirts',
+      audience: p.audience || 'Unisex',
+      aud: p.aud || p.audience || 'Unisex',
+      brand: p.brand || p.supplierName || 'Partner Supplier',
+      price: sellingPrice,
+      originalPrice: p.originalPrice || Math.round(sellingPrice * 1.3),
+      supplierPrice: wholesaleCost,
+      wholesalePrice: wholesaleCost,
+      markupAmount: 40,
+      stock: p.stock || 50,
+      imageUrl: p.imageUrl || '/images/product_tshirt_minimal_1793012315796.jpg',
+      galleryUrls: Array.isArray(p.galleryUrls) ? p.galleryUrls : [p.imageUrl || '/images/product_tshirt_minimal_1793012315796.jpg'],
+      sizes: Array.isArray(p.sizes) && p.sizes.length > 0 ? p.sizes : ['S', 'M', 'L', 'XL'],
+      colors: Array.isArray(p.colors) && p.colors.length > 0 ? p.colors : ['#171717'],
+      color: p.color || '#171717',
+      colorName: p.colorName || 'Black',
+      material: p.material || '100% Combed Cotton',
+      status: 'draft',
+      isPublished: false,
+      supplierId: p.supplierId || `SUP-${idx + 1}`,
+      supplierName: p.supplierName || p.brand || 'Partner Supplier',
+      tag: 'MULTI-STORE IMPORT',
+      confidence: 94,
+    };
+
+    return {
+      id: `multi-stg-${Date.now()}-${idx + 1}`,
+      raw: p,
+      product: productPayload,
+      confidence: 94,
+      category: productPayload.category,
+      subcategory: productPayload.subcategory || 'Apparel',
+      audience: productPayload.audience || 'Unisex',
+      brand: productPayload.brand || 'Partner Supplier',
+      isDuplicate,
+      duplicateOfSku,
+      status: isDuplicate ? 'needs_review' : 'categorized',
+      approvalStatus: 'pending_approval',
+      supplierPrice: wholesaleCost,
+      supplierCost: wholesaleCost,
+      markupAmount: 40,
+      marginPct,
+      suggestedSellingPrice: sellingPrice,
+      missingFields: [],
+      extractionSourceUrl: p.sourceStoreUrl,
+      sourceSupplierId: productPayload.supplierId,
+      sourceSupplierName: productPayload.supplierName,
+      error: isDuplicate ? `Duplicate product detected (matches existing SKU: ${duplicateOfSku})` : undefined,
+    };
+  });
 }

@@ -5,35 +5,43 @@ import {
   ShoppingBag,
   Check,
   ShieldCheck,
-  Ruler,
   Truck,
   Star,
   Sparkles,
+  ArrowRight,
+  RotateCcw,
 } from 'lucide-react';
-import { ObryntAuthenticitySeal, OBRYNT_EMBLEM_SRC } from './ObryntBrand';
+import { OBRYNT_EMBLEM_SRC } from './ObryntBrand';
 import { Product, ProductReview } from '../types';
-import { getStoredReviews, saveReview, getProductRatingData } from '../services/reviewService';
+import { getStoredReviews, getProductRatingData } from '../services/reviewService';
 
 interface ProductDetailModalProps {
   product: Product | null;
+  allProducts?: Product[];
   onClose: () => void;
   onAddToCart: (product: Product, size: string, quantity: number) => void;
+  onBuyNow?: (product: Product, size: string, quantity: number) => void;
   isWishlisted: boolean;
   onToggleWishlist: (product: Product) => void;
   onOpenCustomStudio?: () => void;
+  onSelectProduct?: (product: Product) => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
+  allProducts = [],
   onClose,
   onAddToCart,
+  onBuyNow,
   isWishlisted,
   onToggleWishlist,
   onOpenCustomStudio,
+  onSelectProduct,
 }) => {
   if (!product) return null;
 
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || 'L');
+  const [selectedColor, setSelectedColor] = useState<string>(product.color || '#111111');
   const [quantity, setQuantity] = useState<number>(1);
   const [addedSuccess, setAddedSuccess] = useState<boolean>(false);
   const [pincode, setPincode] = useState('');
@@ -46,16 +54,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
 
-  // Reviews state
+  // Reviews data
   const [reviewsList, setReviewsList] = useState<ProductReview[]>([]);
   useEffect(() => {
     setReviewsList(getStoredReviews());
     setActiveImageIndex(0);
     setImageError(false);
-  }, [product.sku]);
+    setSelectedSize(product.sizes?.[0] || 'L');
+  }, [product.sku, product.id]);
 
   const ratingData = getProductRatingData(product.sku, reviewsList);
-  const type = product.type || 'shirt';
+  const hasDiscount = Boolean(product.originalPrice && product.originalPrice > product.price);
+  const discountPct = hasDiscount
+    ? Math.round((((product.originalPrice || 0) - product.price) / (product.originalPrice || 1)) * 100)
+    : 0;
 
   const handleAdd = () => {
     onAddToCart(product, selectedSize, quantity);
@@ -63,276 +75,327 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     setTimeout(() => setAddedSuccess(false), 1600);
   };
 
+  const handleDirectBuy = () => {
+    if (onBuyNow) {
+      onBuyNow(product, selectedSize, quantity);
+    } else {
+      handleAdd();
+    }
+  };
+
   const checkPincode = (e: React.FormEvent) => {
     e.preventDefault();
     if (pincode.length === 6) {
-      setPincodeResult('Delivery available: Standard (3-4 days) · Cash on Delivery available');
+      setPincodeResult('Delivery available: 2–4 business days · Cash on Delivery & Express Courier eligible');
     } else {
       setPincodeResult('Please enter a valid 6-digit Indian PIN code');
     }
   };
 
-  const getGarmentClass = () => {
-    switch (type) {
-      case 'shoe':
-        return 'w-[180px] h-[95px] clip-shoe';
-      case 'bottle':
-        return 'w-[100px] h-[170px] clip-bottle';
-      case 'bag':
-        return 'w-[150px] h-[140px] clip-bag';
-      case 'shirt':
-      default:
-        return 'w-[150px] h-[175px] clip-shirt';
-    }
-  };
+  // Curated Related Products
+  const relatedProducts = allProducts
+    .filter((p) => p.sku !== product.sku && (p.category === product.category || p.audience === product.audience))
+    .slice(0, 3);
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-[#e4e1da]"
+        className="bg-white text-black w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-neutral-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[#e4e1da] flex items-center justify-between bg-stone-50/70">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full overflow-hidden border border-stone-600 bg-black shrink-0">
+        {/* Top Header Bar */}
+        <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between bg-white">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-full overflow-hidden border border-neutral-300 bg-black shrink-0">
               <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-stone-900 text-stone-200 border border-stone-700">
-              {product.tag || product.badge || 'OBRYNT OFFICIAL'}
+            <span className="font-luxury text-sm font-bold tracking-[0.2em] uppercase text-black">
+              OBRYNT
             </span>
-            <span className="text-xs text-stone-500 font-bold hidden sm:inline">
-              {product.audience || product.aud || 'Unisex'} · {product.category || product.cat}
+            <span className="text-neutral-300">/</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-neutral-400">
+              {product.category || product.cat} · {product.audience || 'Unisex'}
             </span>
           </div>
 
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-stone-200/70 hover:bg-stone-300 flex items-center justify-center text-stone-700 transition-colors cursor-pointer"
+            className="p-1.5 text-neutral-500 hover:text-black transition-colors cursor-pointer"
+            aria-label="Close product view"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="p-5 sm:p-8 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-start">
-          {/* Left Column: Visual Artwork, Images & Gallery */}
-          <div className="bg-[#eeede8] rounded-2xl p-5 sm:p-6 flex flex-col items-center justify-center min-h-[320px] relative shadow-inner">
-            <button
-              onClick={() => onToggleWishlist(product)}
-              className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md shadow-xs transition-transform cursor-pointer z-10 ${
-                isWishlisted ? 'bg-red-50 text-red-600 scale-110' : 'bg-white/80 hover:bg-white text-stone-700'
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-red-600 text-red-600' : ''}`} />
-            </button>
-
-            {/* Main Image or Silhouette */}
-            <div className="relative flex items-center justify-center w-full min-h-[220px]">
-              {allImages.length > 0 && !imageError ? (
-                <img
-                  src={allImages[activeImageIndex] || allImages[0]}
-                  alt={product.name}
-                  onError={() => setImageError(true)}
-                  className="max-h-[240px] max-w-full object-contain rounded-xl drop-shadow-lg"
-                />
-              ) : (
-                <div
-                  className={`${getGarmentClass()} shadow-2xl relative transition-all duration-300 hover:scale-105 flex items-center justify-center`}
-                  style={{ backgroundColor: product.color || '#171717' }}
+        {/* Modal Scrollable Body */}
+        <div className="p-6 sm:p-8 overflow-y-auto space-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-start">
+            
+            {/* Left Column: Gallery & Multiple Images */}
+            <div className="space-y-4">
+              <div className="relative aspect-[3/4] bg-[#f7f7f7] border border-neutral-200 overflow-hidden flex items-center justify-center">
+                {/* Wishlist Button */}
+                <button
+                  type="button"
+                  onClick={() => onToggleWishlist(product)}
+                  className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer z-10 shadow-xs ${
+                    isWishlisted ? 'bg-black text-white' : 'bg-white/80 hover:bg-white text-black'
+                  }`}
+                  aria-label="Wishlist toggle"
                 >
-                  {type === 'shirt' && (
-                    <div
-                      className="text-xs font-black tracking-widest uppercase opacity-40 select-none pointer-events-none"
-                      style={{
-                        color: product.color === '#f5f4ed' || product.color === '#d5d0c5' ? '#111' : '#fff',
-                      }}
-                    >
-                      {product.brand || 'OBRYNT'}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                  <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-white text-white' : 'text-black'}`} />
+                </button>
 
-            {/* Gallery Thumbnails Strip */}
-            {allImages.length > 1 && (
-              <div className="flex items-center gap-2 mt-4 overflow-x-auto no-scrollbar py-1">
-                {allImages.map((img, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setActiveImageIndex(idx)}
-                    className={`w-12 h-12 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
-                      activeImageIndex === idx ? 'border-[#111111] scale-105 shadow-sm' : 'border-stone-300 opacity-70 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
+                {/* Main Selected Image */}
+                {allImages.length > 0 && !imageError ? (
+                  <img
+                    src={allImages[activeImageIndex] || allImages[0]}
+                    alt={product.name}
+                    onError={() => setImageError(true)}
+                    className="w-full h-full object-cover object-center"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="text-center p-8">
+                    <span className="font-luxury text-xl font-bold uppercase tracking-[0.2em] text-neutral-700 block mb-2">
+                      OBRYNT
+                    </span>
+                    <span className="text-xs text-neutral-400 uppercase tracking-wider">
+                      {product.name}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
 
-            <div className="mt-3 text-xs font-bold text-stone-600">
-              Color: <strong>{product.colorName || 'Signature'}</strong> ({product.color})
-            </div>
-          </div>
-
-          {/* Right Column: Contiguous Purchase Module */}
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black text-[#111111] tracking-tight leading-snug">
-                {product.name}
-              </h2>
-
-              <div className="flex items-center gap-2 mt-1.5">
-                <div className="flex items-center text-amber-500">
-                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span className="text-xs font-black ml-1 text-stone-900 tabular-nums">
-                    {product.rating || ratingData.averageRating}
-                  </span>
-                </div>
-                <span className="text-xs text-stone-400">·</span>
-                <span className="text-xs text-stone-500 font-medium">
-                  {product.reviewCount || ratingData.totalReviews} verified reviews
-                </span>
-              </div>
-            </div>
-
-            {/* Price */}
-            <div className="flex items-baseline gap-2 pt-1">
-              <span className="text-2xl font-black text-[#111111] tabular-nums">
-                ₹{product.price.toLocaleString('en-IN')}
-              </span>
-              {product.originalPrice && product.originalPrice > product.price && (
-                <span className="text-sm text-stone-400 line-through tabular-nums">
-                  ₹{product.originalPrice.toLocaleString('en-IN')}
-                </span>
-              )}
-              <span className="text-[11px] font-bold text-[#7a8e12] bg-[#d7ff3f]/30 px-2 py-0.5 rounded">
-                Inclusive of all taxes
-              </span>
-            </div>
-
-            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-              {product.description}
-            </p>
-
-            {/* Sizes */}
-            {product.sizes && product.sizes.length > 0 && (
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-stone-700 mb-2">
-                  Select Size: <strong>{selectedSize}</strong>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {product.sizes.map((s) => (
+              {/* Thumbnails Row */}
+              {allImages.length > 1 && (
+                <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1">
+                  {allImages.map((img, idx) => (
                     <button
-                      key={s}
-                      onClick={() => setSelectedSize(s)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-colors cursor-pointer ${
-                        selectedSize === s
-                          ? 'bg-[#111111] text-white border-[#111111] shadow-xs'
-                          : 'bg-white hover:bg-stone-100 text-stone-700 border-[#e4e1da]'
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`w-16 h-20 border transition-all cursor-pointer overflow-hidden shrink-0 ${
+                        activeImageIndex === idx ? 'border-black' : 'border-neutral-200 opacity-60 hover:opacity-100'
                       }`}
                     >
-                      {s}
+                      <img src={img} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Quantity */}
-            <div className="flex items-center gap-3 pt-1">
-              <span className="text-xs font-bold text-stone-600">Quantity:</span>
-              <div className="flex items-center border border-stone-300 rounded-lg bg-white overflow-hidden">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-2.5 py-1 text-stone-600 hover:bg-stone-100 cursor-pointer text-xs"
-                >
-                  -
-                </button>
-                <span className="px-3 py-1 text-xs font-black tabular-nums">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="px-2.5 py-1 text-stone-600 hover:bg-stone-100 cursor-pointer text-xs"
-                >
-                  +
-                </button>
-              </div>
+              )}
             </div>
 
-            {/* Primary Buy CTA */}
-            <div className="pt-2 flex flex-col gap-2">
-              <button
-                onClick={handleAdd}
-                className={`w-full py-3.5 rounded-full font-black text-xs sm:text-sm uppercase tracking-wider transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 ${
-                  addedSuccess
-                    ? 'bg-[#7a8e12] text-white'
-                    : 'bg-[#111111] hover:bg-black text-[#d7ff3f]'
-                }`}
-              >
-                {addedSuccess ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    <span>ADDED TO BAG!</span>
-                  </>
-                ) : (
-                  <>
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>ADD TO BAG · ₹{(product.price * quantity).toLocaleString('en-IN')}</span>
-                  </>
+            {/* Right Column: Contiguous Purchase Module */}
+            <div className="space-y-6">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-neutral-400 block mb-1.5">
+                  {product.brand || 'OBRYNT ATELIER'}
+                </span>
+                <h1 className="font-luxury text-2xl sm:text-3xl font-bold text-black tracking-tight leading-snug">
+                  {product.name}
+                </h1>
+
+                {/* Rating & Verified reviews */}
+                <div className="flex items-center gap-2 mt-2 text-xs text-neutral-500">
+                  <div className="flex items-center text-black">
+                    <Star className="w-3.5 h-3.5 fill-black text-black" />
+                    <span className="font-bold ml-1 tabular-nums">{product.rating || 4.8}</span>
+                  </div>
+                  <span>·</span>
+                  <span>{product.reviewCount || 34} verified client reviews</span>
+                </div>
+              </div>
+
+              {/* Price Line */}
+              <div className="flex items-baseline gap-2.5 py-3 border-y border-neutral-100">
+                <span className="text-2xl sm:text-3xl font-bold text-black tabular-nums">
+                  ₹{product.price.toLocaleString('en-IN')}
+                </span>
+                {hasDiscount && (
+                  <span className="text-sm text-neutral-400 line-through tabular-nums">
+                    ₹{product.originalPrice?.toLocaleString('en-IN')}
+                  </span>
                 )}
-              </button>
+                {hasDiscount && (
+                  <span className="text-[11px] font-bold text-black uppercase tracking-wider bg-neutral-100 px-2 py-0.5">
+                    Save {discountPct}%
+                  </span>
+                )}
+                <span className="text-xs text-neutral-400 ml-auto font-normal">
+                  All taxes included
+                </span>
+              </div>
 
-              {product.category === 'Custom Design' && onOpenCustomStudio && (
-                <button
-                  onClick={() => {
-                    onClose();
-                    onOpenCustomStudio();
-                  }}
-                  className="w-full py-2.5 bg-[#d7ff3f]/20 hover:bg-[#d7ff3f]/40 text-[#111111] border border-[#d7ff3f] rounded-full font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-[#7a8e12]" />
-                  <span>Customize in 3D Studio</span>
-                </button>
+              {/* Description */}
+              <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-normal">
+                {product.description}
+              </p>
+
+              {/* Size Selector */}
+              {product.sizes && product.sizes.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold uppercase tracking-wider text-black">
+                      Select Size: <strong className="font-bold">{selectedSize}</strong>
+                    </span>
+                    <span className="text-neutral-400 underline cursor-pointer text-[11px]">
+                      Size Guide
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {product.sizes.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSelectedSize(s)}
+                        className={`min-w-[48px] h-10 px-3 text-xs font-bold uppercase transition-colors cursor-pointer border ${
+                          selectedSize === s
+                            ? 'bg-black text-white border-black'
+                            : 'bg-white text-black border-neutral-200 hover:border-black'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
-            </div>
 
-            {/* Pincode Estimator */}
-            <div className="pt-3 border-t border-[#e4e1da]">
-              <form onSubmit={checkPincode} className="flex gap-2">
-                <input
-                  type="text"
-                  maxLength={6}
-                  value={pincode}
-                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Enter 6-digit Pincode"
-                  className="flex-1 bg-stone-50 border border-[#e4e1da] rounded-xl px-3 py-1.5 text-xs font-bold outline-hidden focus:border-black"
-                />
+              {/* Quantity */}
+              <div className="flex items-center gap-4 text-xs">
+                <span className="font-bold uppercase tracking-wider text-black">Quantity:</span>
+                <div className="flex items-center border border-neutral-200">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-8 h-8 flex items-center justify-center text-neutral-600 hover:text-black cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="w-8 text-center font-bold tabular-nums">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-8 h-8 flex items-center justify-center text-neutral-600 hover:text-black cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="text-neutral-400 text-[11px]">In stock · Dispatched in 24 hours</span>
+              </div>
+
+              {/* Action Buttons: Add to Bag & Buy Now */}
+              <div className="space-y-2.5 pt-2">
                 <button
-                  type="submit"
-                  className="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 rounded-xl text-xs font-bold text-stone-800 transition-colors cursor-pointer"
+                  type="button"
+                  onClick={handleAdd}
+                  className={`w-full py-4 text-xs font-bold uppercase tracking-[0.2em] transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                    addedSuccess
+                      ? 'bg-neutral-800 text-white'
+                      : 'bg-black hover:bg-neutral-900 text-white shadow-lg'
+                  }`}
                 >
-                  Check
+                  {addedSuccess ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>ADDED TO BAG</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="w-4 h-4" />
+                      <span>ADD TO BAG</span>
+                    </>
+                  )}
                 </button>
-              </form>
-              {pincodeResult && (
-                <p className="text-[11px] font-bold text-[#7a8e12] mt-1.5 flex items-center gap-1">
-                  <Truck className="w-3.5 h-3.5" />
-                  <span>{pincodeResult}</span>
-                </p>
-              )}
-            </div>
 
-            {/* Official Brand Authenticity Seal */}
-            <div className="pt-2">
-              <ObryntAuthenticitySeal />
+                <button
+                  type="button"
+                  onClick={handleDirectBuy}
+                  className="w-full py-3.5 bg-neutral-100 hover:bg-neutral-200 text-black text-xs font-bold uppercase tracking-[0.2em] border border-neutral-300 transition-colors cursor-pointer"
+                >
+                  BUY NOW
+                </button>
+              </div>
+
+              {/* Delivery Estimator Strip */}
+              <div className="pt-4 border-t border-neutral-100 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-black">
+                  <Truck className="w-4 h-4" />
+                  <span>Check Delivery & Availability</span>
+                </div>
+                <form onSubmit={checkPincode} className="flex gap-2">
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Enter 6-digit PIN code"
+                    className="flex-1 border border-neutral-300 px-3 py-2 text-xs text-black outline-hidden focus:border-black font-mono"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-neutral-900 hover:bg-black text-white text-xs font-bold uppercase tracking-wider cursor-pointer"
+                  >
+                    Check
+                  </button>
+                </form>
+                {pincodeResult && (
+                  <p className="text-[11px] text-neutral-600 font-medium">{pincodeResult}</p>
+                )}
+              </div>
+
+              {/* Trust Details */}
+              <div className="pt-3 border-t border-neutral-100 grid grid-cols-2 gap-3 text-[11px] text-neutral-500">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-black" />
+                  <span>100% Genuine OBRYNT</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RotateCcw className="w-3.5 h-3.5 text-black" />
+                  <span>7-Day Return Policy</span>
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Related Products Section */}
+          {relatedProducts.length > 0 && (
+            <div className="pt-8 border-t border-neutral-200">
+              <h3 className="font-luxury text-sm sm:text-base font-bold uppercase tracking-[0.16em] text-black mb-4">
+                You May Also Admire
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                {relatedProducts.map((rel) => (
+                  <div
+                    key={rel.sku || rel.id}
+                    onClick={() => {
+                      if (onSelectProduct) onSelectProduct(rel);
+                    }}
+                    className="group cursor-pointer border border-neutral-200 hover:border-black transition-colors"
+                  >
+                    <div className="aspect-[3/4] bg-neutral-100 overflow-hidden">
+                      <img
+                        src={rel.imageUrl}
+                        alt={rel.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div className="p-2.5 bg-white">
+                      <h4 className="text-xs font-medium text-black line-clamp-1">{rel.name}</h4>
+                      <span className="text-xs font-bold text-black tabular-nums mt-1 block">
+                        ₹{rel.price.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

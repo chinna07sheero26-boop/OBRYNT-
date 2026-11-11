@@ -50,7 +50,9 @@ export function mapDbRowToProduct(row: any): Product {
     color: Array.isArray(row.colors) && row.colors.length > 0 ? row.colors[0] : '#171717',
     colorName: Array.isArray(row.colors) && row.colors.length > 0 ? row.colors[0] : 'Classic',
     supplierId: row.supplier_id || undefined,
+    supplierPrice: row.wholesale_cost ? Number(row.wholesale_cost) : (Number(row.retail_price) > 40 ? Number(row.retail_price) - 40 : undefined),
     wholesalePrice: row.wholesale_cost ? Number(row.wholesale_cost) : undefined,
+    markupAmount: 40,
     rating: row.rating ? Number(row.rating) : 4.8,
     reviewCount: row.review_count ? Number(row.review_count) : 24,
     material: row.material || undefined,
@@ -66,6 +68,7 @@ export function mapDbRowToProduct(row: any): Product {
 export function mapProductToDbRow(product: Product): Record<string, any> {
   const isPublished = product.status !== 'draft' && !product.needsReview;
   const effectiveStock = product.status === 'out_of_stock' ? 0 : Number(product.stock) || 0;
+  const rawCost = product.supplierPrice ?? product.wholesalePrice ?? (product.price > 40 ? product.price - 40 : null);
 
   return {
     sku: product.sku.trim(),
@@ -90,7 +93,7 @@ export function mapProductToDbRow(product: Product): Record<string, any> {
     sizes: product.sizes || ['S', 'M', 'L', 'XL'],
     colors: product.colors || (product.color ? [product.color] : ['#171717']),
     supplier_id: product.supplierId || null,
-    wholesale_cost: product.wholesalePrice ? Number(product.wholesalePrice) : null,
+    wholesale_cost: rawCost ? Number(rawCost) : null,
   };
 }
 

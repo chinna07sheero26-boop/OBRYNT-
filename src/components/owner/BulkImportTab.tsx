@@ -36,8 +36,22 @@ import {
   PlusCircle,
   Building2,
   ShieldCheck as ShieldCheckIcon,
+  Store,
+  Play,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
-import { Product, Category, ALL_CATEGORIES, BulkImportItem, BulkImportReport } from '../../types';
+import {
+  Product,
+  Category,
+  ALL_CATEGORIES,
+  BulkImportItem,
+  BulkImportReport,
+  MultiStoreFieldEntry,
+  MultiStoreReportItem,
+  MultiStoreBatchResponse,
+} from '../../types';
 import {
   parseBulkFile,
   categorizeImportBatch,
@@ -53,6 +67,8 @@ import {
   getRegisteredSuppliers,
   saveRegisteredSupplier,
   RegisteredSupplier,
+  importMultiStoreUrls,
+  convertMultiStoreProductsToBulkItems,
 } from '../../services/bulkImportService';
 import { saveProductsBulk } from '../../services/productService';
 import { getSupabaseStatus } from '../../services/supabaseClient';
@@ -72,8 +88,21 @@ export const BulkImportTab: React.FC<BulkImportTabProps> = ({
   // Step State: 'upload' | 'processing' | 'review' | 'saving' | 'complete'
   const [currentStep, setCurrentStep] = useState<'upload' | 'processing' | 'review' | 'saving' | 'complete'>('upload');
 
-  // Import Source Method: 'urls' (Single & Bulk URLs) | 'catalogue_url' (Catalogue Feed URL) | 'file' (Excel/CSV/JSON) | 'demo' (Instant Feeds) | 'suppliers' (Directory)
-  const [importMethod, setImportMethod] = useState<'urls' | 'catalogue_url' | 'file' | 'demo' | 'suppliers'>('urls');
+  // Import Source Method: 'multi_store' (30 Store URL Fields) | 'urls' (Single & Bulk URLs) | 'catalogue_url' (Catalogue Feed URL) | 'file' (Excel/CSV/JSON) | 'demo' (Instant Feeds) | 'suppliers' (Directory)
+  const [importMethod, setImportMethod] = useState<'multi_store' | 'urls' | 'catalogue_url' | 'file' | 'demo' | 'suppliers'>('multi_store');
+
+  // 30 Store URL Fields State strictly numbered 1 to 30
+  const [storeFields, setStoreFields] = useState<string[]>(() => {
+    const arr = Array(30).fill('');
+    // Initialize first 3 with valid supplier feeds for immediate instant testing
+    arr[0] = 'https://api.obrynt.com/v1/supplier/tirupur-knitwear.store';
+    arr[1] = 'https://api.obrynt.com/v1/supplier/bombay-denim-mills.store';
+    arr[2] = 'https://api.obrynt.com/v1/supplier/alpine-fleece-atelier.store';
+    return arr;
+  });
+  const [isImportingMultiStore, setIsImportingMultiStore] = useState(false);
+  const [multiStoreFieldStatus, setMultiStoreFieldStatus] = useState<Record<number, MultiStoreReportItem>>({});
+  const [multiStoreBatchReport, setMultiStoreBatchReport] = useState<MultiStoreBatchResponse | null>(null);
 
   // Single & Multiple Product URLs State
   const [multipleUrlsInput, setMultipleUrlsInput] = useState(
@@ -222,6 +251,136 @@ export const BulkImportTab: React.FC<BulkImportTabProps> = ({
       return true;
     });
   }, [importBatch, filterTab, categoryFilter, searchQuery]);
+
+  // Multi-Store Importer Handlers
+  const handleStoreFieldChange = (index: number, value: string) => {
+    setStoreFields((prev) => {
+      const copy = [...prev];
+      copy[index] = value;
+      return copy;
+    });
+  };
+
+  const handleClearAllStoreFields = () => {
+    setStoreFields(Array(30).fill(''));
+    setMultiStoreFieldStatus({});
+    setMultiStoreBatchReport(null);
+    onShowNotice('Cleared all 30 store URL fields.');
+  };
+
+  const handleFillSampleStores = () => {
+    const samples = [
+      'https://api.obrynt.com/v1/supplier/tirupur-knitwear.store',
+      'https://api.obrynt.com/v1/supplier/bombay-denim-mills.store',
+      'https://api.obrynt.com/v1/supplier/alpine-fleece-atelier.store',
+      'https://api.obrynt.com/v1/supplier/surat-luxury-silks.store',
+      'https://api.obrynt.com/v1/supplier/ludhiana-wool-craft.store',
+      'https://api.obrynt.com/v1/supplier/jaipur-handblock-textiles.store',
+      'https://api.obrynt.com/v1/supplier/delhi-activewear-hub.store',
+      'https://api.obrynt.com/v1/supplier/bengaluru-tech-apparel.store',
+      'https://api.obrynt.com/v1/supplier/agra-leather-footwear.store',
+      'https://api.obrynt.com/v1/supplier/kanpur-leather-accessories.store',
+      'https://api.obrynt.com/v1/supplier/chennai-organic-cotton.store',
+      'https://api.obrynt.com/v1/supplier/coimbatore-spinning-mills.store',
+      'https://api.obrynt.com/v1/supplier/varanasi-zari-weavers.store',
+      'https://api.obrynt.com/v1/supplier/kolkata-linen-studios.store',
+      'https://api.obrynt.com/v1/supplier/ahmedabad-denim-forge.store',
+      'https://api.obrynt.com/v1/supplier/mumbai-haute-couture.store',
+      'https://api.obrynt.com/v1/supplier/hyderabad-pearl-accessories.store',
+      'https://api.obrynt.com/v1/supplier/pune-athleisure-works.store',
+      'https://api.obrynt.com/v1/supplier/indore-casualwear-direct.store',
+      'https://api.obrynt.com/v1/supplier/surat-chiffon-emporium.store',
+      'https://api.obrynt.com/v1/supplier/panipat-home-textiles.store',
+      'https://api.obrynt.com/v1/supplier/gurugram-smart-garments.store',
+      'https://api.obrynt.com/v1/supplier/noida-fashion-logistics.store',
+      'https://api.obrynt.com/v1/supplier/tirupur-polo-masters.store',
+      'https://api.obrynt.com/v1/supplier/kochi-coastal-resortwear.store',
+      'https://api.obrynt.com/v1/supplier/amritsar-phulkari-guild.store',
+      'https://api.obrynt.com/v1/supplier/madurai-handloom-collective.store',
+      'https://api.obrynt.com/v1/supplier/guwahati-muga-silks.store',
+      'https://api.obrynt.com/v1/supplier/rajkot-silver-accents.store',
+      'https://api.obrynt.com/v1/supplier/goa-linen-breeze.store',
+    ];
+    setStoreFields(samples);
+    onShowNotice('Filled all 30 store fields with authorised supplier feeds.');
+  };
+
+  const handleImportAllStores = async () => {
+    const activeEntries: MultiStoreFieldEntry[] = storeFields
+      .map((url, idx) => ({ index: idx + 1, url: url.trim() }))
+      .filter((entry) => entry.url.length > 0);
+
+    if (activeEntries.length === 0) {
+      onShowNotice('Please enter at least one Store URL in the 30 input fields.');
+      return;
+    }
+
+    const invalid = activeEntries.filter(
+      (e) => !e.url.startsWith('http://') && !e.url.startsWith('https://')
+    );
+    if (invalid.length > 0) {
+      onShowNotice(`Field #${invalid[0].index} is not a valid URL. URLs must start with http:// or https://`);
+      return;
+    }
+
+    setIsImportingMultiStore(true);
+    setCurrentStep('processing');
+    setProcessProgress({
+      current: 0,
+      total: activeEntries.length,
+      currentItem: `Querying ${activeEntries.length} supplier store URL(s) in parallel batch...`,
+      pct: 12,
+    });
+
+    try {
+      const response: MultiStoreBatchResponse = await importMultiStoreUrls(activeEntries, targetMarginPct);
+      setMultiStoreBatchReport(response);
+
+      const statusMap: Record<number, MultiStoreReportItem> = {};
+      response.storeReports.forEach((rep) => {
+        statusMap[rep.index] = rep;
+      });
+      setMultiStoreFieldStatus(statusMap);
+
+      setProcessProgress({
+        current: activeEntries.length,
+        total: activeEntries.length,
+        currentItem: `Batch complete: Discovered ${response.totalDiscovered} products. Validating SKUs, variants, prices & duplicates...`,
+        pct: 85,
+      });
+
+      const converted = convertMultiStoreProductsToBulkItems(response.allProducts, products);
+      setImportBatch(converted);
+
+      const initialSelected = new Set<string>();
+      converted.forEach((it) => {
+        if (!it.isDuplicate && it.status !== 'failed') {
+          initialSelected.add(it.id);
+        }
+      });
+      setSelectedItemIds(initialSelected);
+
+      setSourceFeedMetadata({
+        type: 'supplier_url',
+        name: `Multi-Store Batch (${response.totalStoresQueried} Stores)`,
+        url: `${activeEntries.length} Supplier Store(s)`,
+        protocol: 'Multi-Store B2B Automated Catalogue Engine',
+        discovered: response.totalDiscovered,
+        skipped: response.totalDuplicatesSkipped,
+      });
+
+      setCurrentStep('review');
+      setFilterTab('pending');
+      onShowNotice(
+        `Discovered ${response.totalDiscovered} products across ${response.successfulStores} store(s). ${response.totalDuplicatesSkipped > 0 ? `${response.totalDuplicatesSkipped} duplicates skipped.` : ''} All items queued for review.`
+      );
+    } catch (err: any) {
+      onShowNotice(`Multi-store import failed: ${err.message || 'Check network reachability'}`);
+      setCurrentStep('upload');
+    } finally {
+      setIsImportingMultiStore(false);
+    }
+  };
 
   // Extract Products from Single or Multiple URLs using Gemini AI
   const handleExtractFromMultipleUrls = async () => {
@@ -878,17 +1037,39 @@ export const BulkImportTab: React.FC<BulkImportTabProps> = ({
           <div className="flex flex-wrap items-center gap-2 p-1.5 bg-[#141414] border border-stone-800 rounded-2xl">
             <button
               onClick={() => {
+                setImportMethod('multi_store');
+                setUrlDetectionResult(null);
+              }}
+              className={`flex-1 min-w-[210px] px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                importMethod === 'multi_store'
+                  ? 'bg-[#d7ff3f] text-[#111111] shadow-md font-black'
+                  : 'text-stone-400 hover:text-white hover:bg-stone-900'
+              }`}
+            >
+              <Store className="w-4 h-4" />
+              <span>Multi-Store Importer (30 Stores)</span>
+              <span
+                className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md ${
+                  importMethod === 'multi_store' ? 'bg-[#111111] text-[#d7ff3f]' : 'bg-[#d7ff3f] text-[#111111]'
+                }`}
+              >
+                30 Stores
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
                 setImportMethod('urls');
                 setUrlDetectionResult(null);
               }}
-              className={`flex-1 min-w-[200px] px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 ${
+              className={`flex-1 min-w-[190px] px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 ${
                 importMethod === 'urls'
                   ? 'bg-[#d7ff3f] text-[#111111] shadow-md font-black'
                   : 'text-stone-400 hover:text-white hover:bg-stone-900'
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              <span>Single & Bulk Product URLs (AI)</span>
+              <span>Single & Bulk URLs (AI)</span>
               <span
                 className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md ${
                   importMethod === 'urls' ? 'bg-[#111111] text-[#d7ff3f]' : 'bg-[#d7ff3f] text-[#111111]'
@@ -959,6 +1140,320 @@ export const BulkImportTab: React.FC<BulkImportTabProps> = ({
               <span className="text-[10px] font-mono opacity-80">({registeredSuppliers.length})</span>
             </button>
           </div>
+
+          {/* TAB: MULTI-STORE URL IMPORTER (EXACTLY 30 SEPARATE URL FIELDS) */}
+          {importMethod === 'multi_store' && (
+            <div className="space-y-6">
+              {/* Header Box */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-[#141414] border border-stone-800 space-y-6 shadow-xl">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-stone-800/80 pb-5">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 tracking-tight">
+                        <Store className="w-5 h-5 text-[#d7ff3f]" />
+                        <span>MULTI-STORE URL IMPORTER</span>
+                      </h3>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#d7ff3f] text-[#111111]">
+                        30 Store Fields
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-stone-900 text-stone-300 border border-stone-700">
+                        Zero Inventory Required (Cross-Dock)
+                      </span>
+                    </div>
+                    <p className="text-xs text-stone-400 mt-1.5 max-w-3xl leading-relaxed">
+                      Enter up to 30 complete supplier store or catalogue URLs below. The engine connects across all 30 endpoints simultaneously, discovers accessible products, detects variants and sizes, computes your selling margins, and stages all items under <strong className="text-amber-400">Pending Approval</strong> for your review and bulk publishing to Supabase.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-stone-900 text-stone-300 border border-stone-800 flex items-center gap-2">
+                      <Globe className="w-3.5 h-3.5 text-[#d7ff3f]" />
+                      <span>
+                        <strong className="text-white">{storeFields.filter((u) => u.trim().length > 0).length}</strong> / 30 Stores
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Sourcing Controls & Margin Strip */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-stone-900/60 border border-stone-800">
+                  {/* Target Margin % Control */}
+                  <div className="space-y-1.5 md:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-stone-300 flex items-center gap-1.5">
+                        <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Target Profit Margin (%)</span>
+                      </label>
+                      <span className="font-mono text-xs font-black text-emerald-400">{targetMarginPct}% Target Margin</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={10}
+                        max={80}
+                        step={1}
+                        value={targetMarginPct}
+                        onChange={(e) => setTargetMarginPct(Number(e.target.value))}
+                        className="flex-1 accent-[#d7ff3f] cursor-pointer"
+                      />
+                      <input
+                        type="number"
+                        min={5}
+                        max={90}
+                        value={targetMarginPct}
+                        onChange={(e) => setTargetMarginPct(Number(e.target.value))}
+                        className="w-16 bg-[#141414] border border-stone-700 rounded-xl px-2 py-1 text-center text-xs font-black text-white font-mono"
+                      />
+                    </div>
+                    <span className="text-[10px] text-stone-500 block">
+                      Applied to wholesale costs from all 30 stores. Editable anytime in the review table.
+                    </span>
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="space-y-2 flex flex-col justify-end">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleFillSampleStores}
+                        className="flex-1 px-3 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl border border-stone-700 transition-colors cursor-pointer text-center"
+                        title="Fill all 30 store fields with verified supplier feeds"
+                      >
+                        Fill 30 Sample Stores
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClearAllStoreFields}
+                        className="px-3 py-2 bg-stone-900 hover:bg-stone-800 text-stone-400 hover:text-white text-xs font-bold rounded-xl border border-stone-800 transition-colors cursor-pointer"
+                        title="Clear all 30 fields"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                    <span className="text-[10px] text-stone-500 text-right block">
+                      Click "Fill 30 Sample Stores" for instant 30-store verification
+                    </span>
+                  </div>
+                </div>
+
+                {/* Primary Action Button Bar */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+                  <div className="flex items-center gap-2 text-xs text-stone-400">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Every field accepts any complete store or catalogue URL. No category or supplier selection required.</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleImportAllStores}
+                    disabled={isImportingMultiStore || storeFields.every((u) => u.trim().length === 0)}
+                    className="px-8 py-3.5 rounded-2xl bg-[#d7ff3f] hover:bg-[#c9f530] disabled:opacity-40 disabled:cursor-not-allowed text-[#111111] font-black text-sm shadow-xl hover:shadow-[#d7ff3f]/20 transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 shrink-0"
+                  >
+                    {isImportingMultiStore ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-[#111111]" />
+                        <span>Discovering & Importing 30 Stores...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 fill-current" />
+                        <span>Import All Stores</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Batch Report Summary Card if available */}
+                {multiStoreBatchReport && (
+                  <div className="p-4 rounded-2xl bg-stone-900/90 border border-[#d7ff3f]/40 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-800 pb-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-[#d7ff3f]" />
+                        <h4 className="text-xs font-black uppercase text-white tracking-wider">
+                          Multi-Store Batch Results
+                        </h4>
+                      </div>
+                      <span className="text-[11px] font-mono text-stone-400">
+                        {multiStoreBatchReport.successfulStores} of {multiStoreBatchReport.totalStoresQueried} Stores Accessible
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                      <div className="p-2.5 rounded-xl bg-black/40 border border-stone-800">
+                        <span className="text-[10px] text-stone-400 uppercase font-black block">Stores Queried</span>
+                        <span className="text-base font-black text-white font-mono">{multiStoreBatchReport.totalStoresQueried}</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-black/40 border border-stone-800">
+                        <span className="text-[10px] text-emerald-400 uppercase font-black block">Discovered</span>
+                        <span className="text-base font-black text-emerald-400 font-mono">{multiStoreBatchReport.totalDiscovered}</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-black/40 border border-stone-800">
+                        <span className="text-[10px] text-amber-400 uppercase font-black block">Duplicates Skipped</span>
+                        <span className="text-base font-black text-amber-400 font-mono">{multiStoreBatchReport.totalDuplicatesSkipped}</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-black/40 border border-stone-800">
+                        <span className="text-[10px] text-stone-400 uppercase font-black block">Active Status</span>
+                        <span className="text-xs font-black text-[#d7ff3f] block mt-1">Pending Approval</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep('review')}
+                        className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-xs font-bold text-white rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <span>Open Admin Review Staging</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-[#d7ff3f]" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* THE 30 SEPARATE URL INPUT FIELDS */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-stone-300">
+                      30 Supplier Store URLs:
+                    </span>
+                    <span className="text-[11px] text-stone-500 font-mono">
+                      Numbered 1 to 30
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {Array.from({ length: 30 }).map((_, idx) => {
+                      const fieldNumber = idx + 1;
+                      const status = multiStoreFieldStatus[fieldNumber];
+                      const currentValue = storeFields[idx] || '';
+
+                      return (
+                        <div
+                          key={fieldNumber}
+                          className="p-3 rounded-2xl bg-stone-900/80 border border-stone-800/90 hover:border-stone-700 transition-colors space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <label
+                              htmlFor={`store-url-${fieldNumber}`}
+                              className="text-xs font-bold text-stone-300 font-mono flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <span className="w-5 h-5 rounded-md bg-stone-800 text-white flex items-center justify-center text-[11px] font-black shrink-0">
+                                {fieldNumber}
+                              </span>
+                              <span>{fieldNumber}. Paste Store URL</span>
+                            </label>
+
+                            {/* Status Pill if available */}
+                            {status && (
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                                  status.status === 'success'
+                                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                    : status.status === 'bot_protected'
+                                    ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                                    : 'bg-rose-950 text-rose-300 border border-rose-800'
+                                }`}
+                              >
+                                {status.status === 'success' ? (
+                                  <>
+                                    <CheckCircle className="w-3 h-3 text-emerald-400" />
+                                    <span>{status.productsCount} items</span>
+                                  </>
+                                ) : status.status === 'bot_protected' ? (
+                                  <>
+                                    <AlertTriangle className="w-3 h-3 text-amber-400" />
+                                    <span>Bot Protected</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <AlertCircle className="w-3 h-3 text-rose-400" />
+                                    <span>Error</span>
+                                  </>
+                                )}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="relative">
+                            <input
+                              id={`store-url-${fieldNumber}`}
+                              type="url"
+                              value={currentValue}
+                              onChange={(e) => handleStoreFieldChange(idx, e.target.value)}
+                              placeholder={`${fieldNumber}. Paste Store URL`}
+                              className="w-full bg-[#101010] border border-stone-800 focus:border-[#d7ff3f] rounded-xl px-3 py-2 text-xs text-white placeholder:text-stone-600 font-mono transition-colors outline-hidden"
+                            />
+                            {currentValue && (
+                              <button
+                                type="button"
+                                onClick={() => handleStoreFieldChange(idx, '')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-300 p-1 cursor-pointer"
+                                title="Clear field"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Message / Protocol Details */}
+                          {status && (
+                            <div className="text-[10px] text-stone-400 flex items-center justify-between px-1">
+                              <span className="truncate max-w-[280px]" title={status.message}>
+                                {status.message}
+                              </span>
+                              {status.supplierName && (
+                                <span className="font-mono text-stone-500 shrink-0 font-bold">
+                                  {status.supplierName}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Bottom Import All Stores Bar */}
+                  <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-stone-800/80">
+                    <div className="text-xs text-stone-400 flex items-center gap-2">
+                      <Store className="w-4 h-4 text-[#d7ff3f]" />
+                      <span>
+                        <strong className="text-white">{storeFields.filter((u) => u.trim().length > 0).length}</strong> of 30 store fields configured
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={handleFillSampleStores}
+                        className="px-4 py-3 bg-stone-900 hover:bg-stone-800 text-stone-300 text-xs font-bold rounded-2xl border border-stone-800 transition-colors cursor-pointer"
+                      >
+                        Fill 30 Samples
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleImportAllStores}
+                        disabled={isImportingMultiStore || storeFields.every((u) => u.trim().length === 0)}
+                        className="flex-1 sm:flex-none px-8 py-3.5 rounded-2xl bg-[#d7ff3f] hover:bg-[#c9f530] disabled:opacity-40 disabled:cursor-not-allowed text-[#111111] font-black text-sm shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        {isImportingMultiStore ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-[#111111]" />
+                            <span>Importing All Stores...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4 fill-current" />
+                            <span>Import All Stores</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* TAB 1: AI SMART SINGLE & BULK PRODUCT URLS IMPORT */}
           {importMethod === 'urls' && (
@@ -1930,14 +2425,20 @@ export const BulkImportTab: React.FC<BulkImportTabProps> = ({
                     <th className="p-3">Supplier</th>
                     <th className="p-3">
                       <div className="flex items-center gap-1">
-                        <Lock className="w-3 h-3 text-[#d7ff3f]" />
-                        <span>Wholesale (₹)</span>
+                        <Lock className="w-3 h-3 text-stone-400" />
+                        <span>Supplier Price (₹)</span>
                       </div>
                     </th>
-                    <th className="p-3 min-w-[140px]">
+                    <th className="p-3">
                       <div className="flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3 text-emerald-400" />
-                        <span>Selling Price & Margin</span>
+                        <Sparkles className="w-3 h-3 text-emerald-400" />
+                        <span>Pricing Rule</span>
+                      </div>
+                    </th>
+                    <th className="p-3 min-w-[160px]">
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3 text-white" />
+                        <span>OBRYNT Selling Price</span>
                       </div>
                     </th>
                     <th className="p-3">Stock</th>
@@ -2048,43 +2549,42 @@ export const BulkImportTab: React.FC<BulkImportTabProps> = ({
                             </div>
                           </td>
 
-                          {/* Wholesale Cost (Private ₹ - Owner eyes only) */}
+                          {/* Supplier Price (Stored Separately) */}
                           <td className="p-3 whitespace-nowrap">
-                            <div className="flex items-center gap-1 font-mono font-bold text-stone-300 text-xs">
-                              <Lock className="w-3 h-3 text-[#d7ff3f]" />
+                            <div className="flex items-center gap-1 font-mono font-bold text-stone-200 text-xs">
+                              <Lock className="w-3 h-3 text-stone-400" />
                               <span>₹{cost.toLocaleString('en-IN')}</span>
                             </div>
-                            <span className="text-[9px] text-stone-500 block">Private Cost</span>
+                            <span className="text-[9px] text-stone-500 block">Supplier Cost</span>
                           </td>
 
-                          {/* Selling Price & Margin % */}
-                          <td className="p-3 whitespace-nowrap min-w-[140px]">
-                            <div className="flex items-center gap-1.5">
-                              <input
-                                type="number"
-                                min={cost}
-                                value={item.product.price}
-                                onChange={(e) => handleUpdateItemPrice(item.id, Number(e.target.value))}
-                                className="w-18 bg-stone-900 border border-stone-700 rounded-lg px-2 py-1 text-white font-black text-xs font-mono outline-hidden focus:border-[#d7ff3f]"
-                              />
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-950 text-emerald-400 border border-emerald-800 tabular-nums">
-                                {margin}%
+                          {/* Rule Markup (+₹40) */}
+                          <td className="p-3 whitespace-nowrap">
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-950 text-emerald-300 border border-emerald-800">
+                                <span className="font-mono font-black">+₹40</span>
+                                <span>Rule</span>
+                              </span>
+                              <span className="text-[9px] text-stone-400 block font-mono">
+                                ₹{cost} + ₹40
                               </span>
                             </div>
-                            <div className="flex items-center gap-1 text-[9px] text-stone-500 mt-1">
-                              <span>Set Margin:</span>
-                              {[35, 40, 50].map((m) => (
-                                <button
-                                  key={m}
-                                  type="button"
-                                  onClick={() => handleUpdateItemMargin(item.id, m)}
-                                  className={`px-1 rounded text-[9px] font-mono cursor-pointer ${
-                                    margin === m ? 'bg-[#d7ff3f] text-[#111111] font-bold' : 'text-stone-400 hover:text-white'
-                                  }`}
-                                >
-                                  {m}%
-                                </button>
-                              ))}
+                          </td>
+
+                          {/* OBRYNT Selling Price */}
+                          <td className="p-3 whitespace-nowrap min-w-[160px]">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-white font-black text-sm tabular-nums">
+                                  ₹{price.toLocaleString('en-IN')}
+                                </span>
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-stone-900 text-stone-300 border border-stone-700">
+                                  Customer
+                                </span>
+                              </div>
+                              <span className="text-[9px] text-emerald-400 font-bold block">
+                                Delivery: FREE (₹0)
+                              </span>
                             </div>
                           </td>
 
@@ -2469,67 +2969,83 @@ export const BulkImportTab: React.FC<BulkImportTabProps> = ({
                 />
               </div>
 
-              {/* Pricing, Wholesale Cost & Margin */}
-              <div className="grid grid-cols-3 gap-3 p-3 rounded-2xl bg-stone-900/60 border border-stone-800">
-                <div>
-                  <label className="block text-stone-400 font-bold mb-1 flex items-center gap-1">
-                    <Lock className="w-3 h-3 text-[#d7ff3f]" />
-                    <span>Wholesale (₹)</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={editingItem.supplierCost || editingItem.product.wholesalePrice || 0}
-                    onChange={(e) => {
-                      const cost = Number(e.target.value);
-                      const margin = editingItem.marginPct || 40;
-                      const selling = Math.round(cost / (1 - margin / 100));
-                      setEditingItem({
-                        ...editingItem,
-                        supplierCost: cost,
-                        suggestedSellingPrice: selling,
-                        product: {
-                          ...editingItem.product,
-                          wholesalePrice: cost,
-                          price: selling,
-                        },
-                      });
-                    }}
-                    className="w-full bg-[#141414] border border-stone-700 rounded-xl px-3 py-2 text-white font-mono font-bold outline-hidden focus:border-[#d7ff3f]"
-                  />
+              {/* Pricing, Wholesale Cost & Automatic +₹40 Rule */}
+              <div className="p-3.5 rounded-2xl bg-stone-900/60 border border-stone-800 space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-extrabold text-white flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Global Automatic Pricing Rule</span>
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                    OBRYNT Price = Supplier Price + ₹40
+                  </span>
                 </div>
 
-                <div>
-                  <label className="block text-stone-400 font-bold mb-1 flex items-center gap-1">
-                    <DollarSign className="w-3 h-3 text-white" />
-                    <span>Selling (₹)</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={editingItem.product.price}
-                    onChange={(e) => {
-                      const price = Number(e.target.value);
-                      const cost = editingItem.supplierCost || editingItem.product.wholesalePrice || 0;
-                      const margin = price > cost ? Math.round(((price - cost) / price) * 100) : 0;
-                      setEditingItem({
-                        ...editingItem,
-                        marginPct: margin,
-                        suggestedSellingPrice: price,
-                        product: { ...editingItem.product, price },
-                      });
-                    }}
-                    className="w-full bg-[#141414] border border-stone-700 rounded-xl px-3 py-2 text-white font-mono font-bold outline-hidden focus:border-[#d7ff3f]"
-                  />
-                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-stone-400 text-xs font-bold mb-1 flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-stone-400" />
+                      <span>Supplier Price (₹)</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={editingItem.supplierPrice || editingItem.supplierCost || editingItem.product.wholesalePrice || 0}
+                      onChange={(e) => {
+                        const cost = Math.max(0, Number(e.target.value));
+                        // Mandatory rule: Selling Price = Supplier Price + ₹40
+                        const selling = cost + 40;
+                        const margin = Math.round((40 / (selling || 1)) * 100);
+                        setEditingItem({
+                          ...editingItem,
+                          supplierPrice: cost,
+                          supplierCost: cost,
+                          markupAmount: 40,
+                          marginPct: margin,
+                          suggestedSellingPrice: selling,
+                          product: {
+                            ...editingItem.product,
+                            supplierPrice: cost,
+                            wholesalePrice: cost,
+                            markupAmount: 40,
+                            price: selling,
+                          },
+                        });
+                      }}
+                      className="w-full bg-[#141414] border border-stone-700 rounded-xl px-3 py-2 text-white font-mono font-bold outline-hidden focus:border-white"
+                    />
+                    <span className="text-[9px] text-stone-500 mt-0.5 block">Original Cost</span>
+                  </div>
 
-                <div>
-                  <label className="block text-stone-400 font-bold mb-1 flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3 text-emerald-400" />
-                    <span>Margin (%)</span>
-                  </label>
-                  <div className="w-full bg-[#141414] border border-stone-800 rounded-xl px-3 py-2 text-emerald-400 font-mono font-black text-center">
-                    {editingItem.marginPct !== undefined
-                      ? `${editingItem.marginPct}%`
-                      : `${Math.round((((editingItem.product.price || 0) - (editingItem.supplierCost || 500)) / (editingItem.product.price || 1)) * 100)}%`}
+                  <div>
+                    <label className="block text-stone-400 text-xs font-bold mb-1 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-400" />
+                      <span>Rule Markup</span>
+                    </label>
+                    <div className="w-full bg-[#141414] border border-stone-800 rounded-xl px-3 py-2 text-emerald-400 font-mono font-black text-center text-sm">
+                      +₹40
+                    </div>
+                    <span className="text-[9px] text-stone-500 mt-0.5 block text-center">Global Standard</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-stone-400 text-xs font-bold mb-1 flex items-center gap-1">
+                      <DollarSign className="w-3 h-3 text-white" />
+                      <span>Customer Price (₹)</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={editingItem.product.price}
+                      onChange={(e) => {
+                        const price = Number(e.target.value);
+                        setEditingItem({
+                          ...editingItem,
+                          suggestedSellingPrice: price,
+                          product: { ...editingItem.product, price },
+                        });
+                      }}
+                      className="w-full bg-[#141414] border border-stone-700 rounded-xl px-3 py-2 text-white font-mono font-bold outline-hidden focus:border-white"
+                    />
+                    <span className="text-[9px] text-emerald-400 mt-0.5 block text-center font-bold">Delivery: FREE (₹0)</span>
                   </div>
                 </div>
               </div>

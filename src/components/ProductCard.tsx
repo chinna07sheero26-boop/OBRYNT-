@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, ShoppingBag, Check, Star } from 'lucide-react';
+import { Heart, ShoppingBag, Check } from 'lucide-react';
 import { Product } from '../types';
 
 interface ProductCardProps {
@@ -19,12 +19,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || 'L');
   const [justAdded, setJustAdded] = useState(false);
-
   const [imageError, setImageError] = useState(false);
-  const audienceLabel = product.audience || product.aud || 'Unisex';
-  const categoryLabel = product.category || product.cat || 'Apparel';
-  const tagLabel = product.tag || product.badge || product.brand || 'POPULAR';
-  const type = product.type || 'shirt';
+
+  const brandName = product.brand || 'OBRYNT';
+  const categoryLabel = product.category || product.cat || 'Ready-to-Wear';
+  const hasDiscount = Boolean(product.originalPrice && product.originalPrice > product.price);
+  const discountPct = hasDiscount
+    ? Math.round((((product.originalPrice || 0) - product.price) / (product.originalPrice || 1)) * 100)
+    : 0;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -33,154 +35,121 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     setTimeout(() => setJustAdded(false), 1400);
   };
 
-  const getGarmentClass = () => {
-    switch (type) {
-      case 'shoe':
-        return 'w-[150px] h-[80px] clip-shoe';
-      case 'bottle':
-        return 'w-[80px] h-[140px] clip-bottle';
-      case 'bag':
-        return 'w-[130px] h-[120px] clip-bag';
-      case 'shirt':
-      default:
-        return 'w-[125px] h-[145px] clip-shirt';
-    }
-  };
-
   return (
     <article
       onClick={() => onOpenDetail(product)}
-      className="group bg-white border border-[#e4e1da] rounded-[18px] overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+      className="group relative bg-white flex flex-col cursor-pointer transition-all duration-300 border border-neutral-200 hover:border-black"
     >
-      {/* Product Art Container */}
-      <div className="h-[210px] sm:h-[230px] bg-[#eeede8] relative flex items-center justify-center overflow-hidden transition-colors group-hover:bg-[#e7e6e0]">
-        {/* Tag Pill */}
-        <span className="absolute top-3 left-3 bg-[#d7ff3f] text-[#111111] px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider uppercase z-10 shadow-xs">
-          {product.brand ? product.brand : tagLabel}
-        </span>
-
-        {/* Wishlist Heart */}
+      {/* Product Image Canvas (Consistent 3:4 Portrait Ratio) */}
+      <div className="relative w-full aspect-[3/4] bg-[#f7f7f7] overflow-hidden flex items-center justify-center">
+        {/* Wishlist Heart Icon */}
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onToggleWishlist(product);
           }}
-          className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md transition-all cursor-pointer z-10 shadow-xs ${
+          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer z-20 ${
             isWishlisted
-              ? 'bg-red-50 text-red-600 scale-110'
-              : 'bg-white/80 hover:bg-white text-stone-700 hover:text-black'
+              ? 'bg-black text-white'
+              : 'bg-white/80 hover:bg-white text-black opacity-80 hover:opacity-100 shadow-xs'
           }`}
           aria-label={isWishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
         >
-          <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-red-600 text-red-600' : ''}`} />
+          <Heart className={`w-3.5 h-3.5 ${isWishlisted ? 'fill-white text-white' : 'text-black'}`} />
         </button>
 
-        {/* Product Image with Fallback to Stylized Geometry */}
-        <div className="relative flex items-center justify-center transition-transform duration-300 group-hover:scale-105 w-full h-full p-4">
-          {product.imageUrl && !imageError ? (
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              onError={() => setImageError(true)}
-              className="max-h-[175px] max-w-[175px] w-auto h-auto object-contain drop-shadow-md rounded-lg"
-            />
-          ) : (
-            <div
-              className={`${getGarmentClass()} shadow-xl relative transition-all duration-200 flex items-center justify-center`}
-              style={{ backgroundColor: product.color || '#171717' }}
-            >
-              {type === 'shirt' && (
-                <div
-                  className="text-[10px] font-black tracking-widest uppercase opacity-40 select-none pointer-events-none"
-                  style={{
-                    color: product.color === '#f5f4ed' || product.color === '#d5d0c5' || product.color === '#f4f1e8' ? '#111' : '#fff',
-                  }}
-                >
-                  {product.brand || 'OBRYNT'}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Stock badge if low */}
-        {product.stock < 35 && product.stock > 0 && (
-          <span className="absolute bottom-2.5 left-3 text-[10px] font-bold text-amber-700 bg-amber-50/90 px-1.5 py-0.5 rounded">
-            Only {product.stock} left
+        {/* Discount Tag */}
+        {hasDiscount && discountPct > 0 && (
+          <span className="absolute top-3 left-3 bg-black text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 z-10">
+            -{discountPct}%
           </span>
         )}
-      </div>
 
-      {/* Product Information */}
-      <div className="p-4 flex flex-col flex-1 justify-between">
-        <div>
-          <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#6b6b6b] mb-1">
-            {audienceLabel} · {categoryLabel}
-          </div>
-
-          <h3 className="font-extrabold text-[15px] text-[#111111] leading-snug line-clamp-1 mb-2 group-hover:text-black">
-            {product.name}
-          </h3>
-
-          {/* Quick Size Pills */}
-          {product.sizes && product.sizes.length > 1 && (
-            <div
-              className="flex items-center gap-1.5 mb-3 overflow-x-auto no-scrollbar py-0.5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="text-[10px] text-stone-400 uppercase font-bold shrink-0">Size:</span>
-              {product.sizes.slice(0, 5).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSelectedSize(s)}
-                  className={`px-1.5 py-0.5 text-[10px] font-bold rounded border transition-colors cursor-pointer shrink-0 ${
-                    selectedSize === s
-                      ? 'bg-[#111111] text-white border-[#111111]'
-                      : 'bg-stone-50 hover:bg-stone-100 text-stone-600 border-[#e4e1da]'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Price & Add to Bag Row */}
-        <div className="pt-2 border-t border-[#e4e1da]/60 flex items-center justify-between gap-2 mt-auto">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-base font-black text-[#111111] tabular-nums tracking-tight">
-              ₹{product.price.toLocaleString('en-IN')}
+        {/* Product Photograph */}
+        {product.imageUrl && !imageError ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            onError={() => setImageError(true)}
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-100 text-neutral-400">
+            <span className="font-luxury text-base font-bold tracking-[0.2em] text-neutral-600 mb-1">
+              OBRYNT
             </span>
-            {product.originalPrice && product.originalPrice > product.price && (
-              <span className="text-xs text-stone-400 line-through tabular-nums">
-                ₹{product.originalPrice.toLocaleString('en-IN')}
-              </span>
-            )}
+            <span className="text-[10px] uppercase tracking-wider">
+              {product.colorName || 'Atelier Garment'}
+            </span>
           </div>
+        )}
 
+        {/* Quick Add To Bag Hover Bar on Desktop */}
+        <div className="absolute bottom-0 inset-x-0 p-3 hidden sm:block translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-20">
           <button
             type="button"
             onClick={handleQuickAdd}
-            className={`px-3 py-2 rounded-full text-xs font-black tracking-wide transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-xs ${
+            className={`w-full py-2.5 text-xs font-bold uppercase tracking-[0.16em] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md ${
               justAdded
-                ? 'bg-[#7a8e12] text-white'
-                : 'bg-[#111111] hover:bg-black text-white'
+                ? 'bg-neutral-800 text-white'
+                : 'bg-black hover:bg-neutral-900 text-white'
             }`}
           >
             {justAdded ? (
               <>
                 <Check className="w-3.5 h-3.5" />
-                <span>ADDED</span>
+                <span>ADDED TO BAG</span>
               </>
             ) : (
               <>
-                <ShoppingBag className="w-3.5 h-3.5 text-[#d7ff3f]" />
-                <span>ADD TO BAG +</span>
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>QUICK ADD</span>
               </>
             )}
+          </button>
+        </div>
+      </div>
+
+      {/* Product Details Block */}
+      <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between bg-white">
+        <div>
+          {/* Subtle Brand & Category Kicker */}
+          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-400 mb-1">
+            <span>{brandName}</span>
+            <span className="text-neutral-300">·</span>
+            <span>{categoryLabel}</span>
+          </div>
+
+          {/* Product Title */}
+          <h3 className="text-xs sm:text-[13px] font-medium text-black leading-snug line-clamp-1 mb-2 group-hover:text-neutral-600 transition-colors">
+            {product.name}
+          </h3>
+        </div>
+
+        {/* Price Row & Mobile Add Action */}
+        <div className="pt-2 border-t border-neutral-100 flex items-center justify-between gap-2 mt-auto">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-xs sm:text-sm font-bold text-black tabular-nums">
+              ₹{product.price.toLocaleString('en-IN')}
+            </span>
+            {hasDiscount && (
+              <span className="text-[11px] text-neutral-400 line-through tabular-nums">
+                ₹{product.originalPrice?.toLocaleString('en-IN')}
+              </span>
+            )}
+          </div>
+
+          {/* Mobile Quick Add Button */}
+          <button
+            type="button"
+            onClick={handleQuickAdd}
+            className="sm:hidden p-1.5 bg-black text-white hover:bg-neutral-800 transition-colors"
+            title="Add to Bag"
+            aria-label="Add to Bag"
+          >
+            {justAdded ? <Check className="w-3.5 h-3.5" /> : <ShoppingBag className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>

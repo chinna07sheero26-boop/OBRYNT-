@@ -121,7 +121,9 @@ export interface Product {
   fit?: string;
   supplierId?: string;
   supplierName?: string;
-  wholesalePrice?: number;
+  supplierPrice?: number; // Original supplier catalogue price (e.g. ₹269)
+  wholesalePrice?: number; // Synced alias for supplier cost in DB
+  markupAmount?: number; // Mandatory OBRYNT markup (default ₹40)
   confidence?: number;
   needsReview?: boolean;
   supplierProductId?: string;
@@ -142,9 +144,11 @@ export interface BulkImportItem {
   duplicateOfSku?: string;
   status: 'pending' | 'categorized' | 'needs_review' | 'imported' | 'failed';
   approvalStatus?: 'pending_approval' | 'approved' | 'rejected';
-  supplierCost?: number;
+  supplierPrice?: number; // Original supplier price (e.g. ₹269)
+  markupAmount?: number; // Automatic +₹40 rule
+  supplierCost?: number; // Synced supplier wholesale cost
   marginPct?: number;
-  suggestedSellingPrice?: number;
+  suggestedSellingPrice?: number; // Supplier Price + ₹40 (e.g. ₹309)
   missingFields?: string[];
   extractionSourceUrl?: string;
   sourceSupplierId?: string;
@@ -157,6 +161,8 @@ export interface SupplierUrlExtractionItem {
   status: 'pending' | 'success' | 'restricted' | 'failed';
   product?: Product;
   raw?: Record<string, any>;
+  supplierPrice?: number;
+  markupAmount?: number;
   supplierCost?: number;
   suggestedSellingPrice?: number;
   marginPct?: number;
@@ -592,5 +598,50 @@ export interface FactorySession {
   expiresAt: number;
   authenticatedAt: string;
 }
+
+// =========================================================================
+// MULTI-STORE 30-URL IMPORTER
+// =========================================================================
+
+export interface MultiStoreFieldEntry {
+  index: number; // 1 to 30
+  url: string;
+  status?: 'idle' | 'queued' | 'crawling' | 'discovered' | 'partial' | 'restricted' | 'failed';
+  supplierName?: string;
+  productsDiscovered?: number;
+  duplicatesCount?: number;
+  message?: string;
+}
+
+export interface MultiStoreReportItem {
+  index: number;
+  storeUrl: string;
+  supplierName: string;
+  status: 'success' | 'partial' | 'restricted' | 'failed' | 'bot_protected';
+  productsCount: number;
+  duplicatesCount: number;
+  protocol: string;
+  message?: string;
+  authorizationNotice?: string;
+  products: Product[];
+}
+
+export interface MultiStoreBatchResponse {
+  success: boolean;
+  batchId: string;
+  totalStoresSubmitted: number;
+  activeStoresCount: number;
+  totalProductsDiscovered: number;
+  totalDuplicates: number;
+  totalFailedStores: number;
+  storeReports: MultiStoreReportItem[];
+  allProducts: Product[];
+  message: string;
+  totalStoresQueried: number;
+  successfulStores: number;
+  totalDiscovered: number;
+  totalDuplicatesSkipped: number;
+}
+
 
 

@@ -3,61 +3,53 @@ import { Truck, ShieldCheck, RefreshCw, Sparkles } from 'lucide-react';
 
 export const TrustBadges: React.FC = () => {
   return (
-    <section className="my-8 sm:my-10 py-6 border-y border-[#e4e1da] bg-white/60 rounded-2xl px-4 sm:px-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#f7f6f2] border border-[#e4e1da] flex items-center justify-center shrink-0">
-            <Truck className="w-5 h-5 text-[#111111]" />
-          </div>
+    <section className="my-10 sm:my-14 py-8 border-y border-neutral-200 bg-white">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+        <div className="flex items-start gap-3.5">
+          <Truck className="w-5 h-5 text-black shrink-0 mt-0.5" />
           <div>
-            <strong className="text-xs font-black text-[#111111] uppercase tracking-wider block">
-              Free Express Shipping
+            <strong className="text-xs font-bold text-black uppercase tracking-[0.16em] block mb-1">
+              Complimentary Express Delivery
             </strong>
-            <span className="text-[11px] text-stone-500 font-medium">
-              On all orders above ₹999 across India
-            </span>
+            <p className="text-xs text-neutral-500 font-normal leading-relaxed">
+              Dispatched with tracked courier partners on all orders above ₹1,499.
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#f7f6f2] border border-[#e4e1da] flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-[#7a8e12]" />
-          </div>
+        <div className="flex items-start gap-3.5">
+          <Sparkles className="w-5 h-5 text-black shrink-0 mt-0.5" />
           <div>
-            <strong className="text-xs font-black text-[#111111] uppercase tracking-wider block">
+            <strong className="text-xs font-bold text-black uppercase tracking-[0.16em] block mb-1">
               Bespoke Silkscreen Studio
             </strong>
-            <span className="text-[11px] text-stone-500 font-medium">
-              High-density print on 220 GSM combed cotton
-            </span>
+            <p className="text-xs text-neutral-500 font-normal leading-relaxed">
+              Craft personal custom prints live on 240 GSM combed organic luxury cotton.
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#f7f6f2] border border-[#e4e1da] flex items-center justify-center shrink-0">
-            <RefreshCw className="w-5 h-5 text-[#111111]" />
-          </div>
+        <div className="flex items-start gap-3.5">
+          <RefreshCw className="w-5 h-5 text-black shrink-0 mt-0.5" />
           <div>
-            <strong className="text-xs font-black text-[#111111] uppercase tracking-wider block">
-              7-Day Returns & Exchanges
+            <strong className="text-xs font-bold text-black uppercase tracking-[0.16em] block mb-1">
+              Complimentary 7-Day Returns
             </strong>
-            <span className="text-[11px] text-stone-500 font-medium">
-              Doorstep pickup & instantaneous store credits
-            </span>
+            <p className="text-xs text-neutral-500 font-normal leading-relaxed">
+              Doorstep courier pickup and seamless exchanges or instant refunds.
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#f7f6f2] border border-[#e4e1da] flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-5 h-5 text-[#111111]" />
-          </div>
+        <div className="flex items-start gap-3.5">
+          <ShieldCheck className="w-5 h-5 text-black shrink-0 mt-0.5" />
           <div>
-            <strong className="text-xs font-black text-[#111111] uppercase tracking-wider block">
-              100% Secure Checkout
+            <strong className="text-xs font-bold text-black uppercase tracking-[0.16em] block mb-1">
+              Encrypted Checkout & COD
             </strong>
-            <span className="text-[11px] text-stone-500 font-medium">
-              UPI QR, Cards & Cash on Delivery supported
-            </span>
+            <p className="text-xs text-neutral-500 font-normal leading-relaxed">
+              Secured with Razorpay 256-bit SSL, UPI QR, Cards, and Cash on Delivery.
+            </p>
           </div>
         </div>
       </div>

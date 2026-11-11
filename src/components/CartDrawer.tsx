@@ -73,26 +73,28 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10">
         <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col">
           {/* Header */}
-          <div className="p-5 sm:p-6 border-b border-[#e4e1da] flex items-center justify-between bg-stone-50/80">
+          <div className="p-5 sm:p-6 border-b border-neutral-200 flex items-center justify-between bg-white">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-full overflow-hidden border border-stone-600 bg-black shrink-0">
+              <div className="w-7 h-7 rounded-full overflow-hidden border border-neutral-300 bg-black shrink-0">
                 <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
               </div>
               <div>
-                <div className="flex items-center gap-1.5">
-                  <h2 className="text-lg font-black text-[#111111] tracking-tight">Your OBRYNT Bag</h2>
-                  <span className="bg-[#111111] text-[#d7ff3f] text-xs font-black px-2 py-0.5 rounded-full">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-luxury text-base font-bold tracking-[0.16em] uppercase text-black">
+                    Shopping Bag
+                  </h2>
+                  <span className="bg-black text-white text-[11px] font-bold px-1.5 py-0.2 rounded-full min-w-4 text-center">
                     {items.reduce((s, x) => s + x.quantity, 0)}
                   </span>
                 </div>
-                <div className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-                  Direct Atelier Checkout
+                <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">
+                  Atelier Direct Checkout
                 </div>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="w-9 h-9 rounded-full bg-stone-200/70 hover:bg-stone-300 flex items-center justify-center text-stone-700 transition-colors cursor-pointer"
+              className="p-1.5 text-neutral-500 hover:text-black transition-colors cursor-pointer"
               aria-label="Close Bag"
             >
               <X className="w-5 h-5" />
@@ -101,23 +103,23 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {/* Free Shipping Meter */}
           {items.length > 0 && (
-            <div className="bg-[#f7f6f2] px-6 py-3 border-b border-[#e4e1da]">
-              <div className="flex items-center justify-between text-xs font-bold text-stone-800 mb-1.5">
+            <div className="bg-neutral-50 px-6 py-3 border-b border-neutral-200">
+              <div className="flex items-center justify-between text-xs font-medium text-neutral-700 mb-1.5">
                 <span className="flex items-center gap-1.5">
-                  <Truck className="w-3.5 h-3.5 text-[#7a8e12]" />
+                  <Truck className="w-3.5 h-3.5 text-black" />
                   {isFreeDelivery ? (
-                    <span className="text-[#7a8e12] font-black">Free Standard Delivery unlocked!</span>
+                    <span className="text-black font-semibold">Complimentary Delivery unlocked</span>
                   ) : (
                     <span>
                       Add <strong>₹{amountToFreeShipping.toLocaleString('en-IN')}</strong> for Free Delivery
                     </span>
                   )}
                 </span>
-                <span className="tabular-nums">{progressPercent}%</span>
+                <span className="tabular-nums font-mono text-[11px]">{progressPercent}%</span>
               </div>
-              <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
+              <div className="w-full bg-neutral-200 h-1 overflow-hidden">
                 <div
-                  className="bg-[#111111] h-full transition-all duration-300 rounded-full"
+                  className="bg-black h-full transition-all duration-300"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
@@ -301,13 +303,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </div>
               </div>
 
-              <p className="text-[10px] text-stone-500 text-center leading-normal">
-                Razorpay Test Mode & Cash on Delivery supported.
+              <p className="text-[10px] text-neutral-400 text-center uppercase tracking-wider">
+                Encrypted Razorpay Checkout & Cash on Delivery supported.
               </p>
 
               <button
                 onClick={onProceedCheckout}
-                className="w-full py-3.5 bg-[#111111] hover:bg-black text-[#d7ff3f] font-black text-xs sm:text-sm rounded-full transition-transform active:scale-98 cursor-pointer shadow-md flex items-center justify-center gap-2"
+                className="w-full py-4 bg-black hover:bg-neutral-900 text-white font-bold text-xs uppercase tracking-[0.2em] transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2"
               >
                 <span>PROCEED TO CHECKOUT</span>
                 <ArrowRight className="w-4 h-4" />
