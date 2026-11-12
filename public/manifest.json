@@ -1,23 +1,37 @@
 {
   "name": "OBRYNT — Wear Your Identity",
   "short_name": "OBRYNT",
-  "description": "Wear your identity. Official OBRYNT luxury fashion, footwear, beauty essentials and live bespoke clothing design studio.",
-  "start_url": "./",
+  "description": "Wear your identity. Official OBRYNT international luxury fashion, footwear, accessories and live bespoke design studio.",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0d0d0d",
-  "theme_color": "#111111",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "./obrynt-emblem.jpg",
+      "src": "/pwa-192x192.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "./obrynt-logo.jpg",
+      "src": "/pwa-512x512.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "32x32",
+      "type": "image/png",
       "purpose": "any"
     }
   ],

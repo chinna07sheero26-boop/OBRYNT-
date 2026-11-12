@@ -1567,6 +1567,8 @@ interface ExtractedProductResult {
   product?: any;
   raw?: Record<string, any>;
   supplierCost?: number;
+  supplierPrice?: number;
+  markupAmount?: number;
   suggestedSellingPrice?: number;
   marginPct?: number;
   missingFields?: string[];
@@ -1813,7 +1815,7 @@ app.post('/api/supplier/extract-urls', async (req: Request, res: Response): Prom
     }
 
     // 2. Check for Built-in Demo Supplier Product URL
-    const demoSlugMatch = targetUrl.match(/product\/([a-z0-9-]+)/i);
+    const demoSlugMatch = targetUrl.match(/products?\/([a-z0-9-]+)/i) || targetUrl.match(/\/([a-z0-9-]+)$/i);
     const demoSlug = demoSlugMatch ? demoSlugMatch[1] : '';
     if (demoSlug && DEMO_SUPPLIER_PRODUCTS[demoSlug]) {
       const p = DEMO_SUPPLIER_PRODUCTS[demoSlug];
@@ -2680,6 +2682,30 @@ app.post('/api/factory/sync', (req: Request, res: Response) => {
 // =========================================================================
 // VITE / STATIC SERVING
 async function bootstrap() {
+  // Explicit favicon and app icon handlers to guarantee instant Chrome new-tab & shortcut resolution
+  app.get('/favicon.ico', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.type('image/x-icon');
+    res.sendFile(path.resolve(__dirname, 'public', 'favicon.ico'));
+  });
+
+  app.get('/favicon.png', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.type('image/png');
+    res.sendFile(path.resolve(__dirname, 'public', 'favicon.png'));
+  });
+
+  app.get(['/apple-touch-icon.png', '/apple-touch-icon-precomposed.png'], (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.type('image/png');
+    res.sendFile(path.resolve(__dirname, 'public', 'apple-touch-icon.png'));
+  });
+
+  app.get('/manifest.json', (_req: Request, res: Response) => {
+    res.type('application/manifest+json');
+    res.sendFile(path.resolve(__dirname, 'public', 'manifest.json'));
+  });
+
   app.use(express.static(path.resolve(__dirname, 'public')));
 
   if (process.env.NODE_ENV !== 'production') {

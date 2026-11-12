@@ -1287,8 +1287,8 @@ export default function App() {
         items={cart}
         subtotal={cartTotal}
         discount={0}
-        deliveryFee={cartTotal >= storeSettings.freeDeliveryThreshold ? 0 : cart.length > 0 ? storeSettings.standardDeliveryFee : 0}
-        grandTotal={cartTotal >= storeSettings.freeDeliveryThreshold ? cartTotal : cartTotal + (cart.length > 0 ? storeSettings.standardDeliveryFee : 0)}
+        deliveryFee={0}
+        grandTotal={cartTotal}
         onOrderPlaced={handleOrderPlaced}
         onClearCart={() => setCart([])}
       />

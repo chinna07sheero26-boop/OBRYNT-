@@ -86,7 +86,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const checkPincode = (e: React.FormEvent) => {
     e.preventDefault();
     if (pincode.length === 6) {
-      setPincodeResult('Delivery available: 2–4 business days · Cash on Delivery & Express Courier eligible');
+      setPincodeResult('FREE Express Delivery (₹0) available: 2–4 business days · Cash on Delivery & Express Courier eligible');
     } else {
       setPincodeResult('Please enter a valid 6-digit Indian PIN code');
     }

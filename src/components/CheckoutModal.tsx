@@ -464,9 +464,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               {/* Order Summary Pill */}
               <div className="p-3.5 rounded-xl bg-stone-100 flex items-center justify-between text-xs">
-                <span className="text-stone-600 font-bold">
-                  {items.length} item(s) in bag
-                </span>
+                <div>
+                  <span className="text-stone-600 font-bold block">
+                    {items.length} item(s) in bag
+                  </span>
+                  <span className="text-[10px] text-emerald-700 font-bold">
+                    Delivery: Complimentary FREE (₹0)
+                  </span>
+                </div>
                 <span className="text-sm font-black text-[#111111] tabular-nums">
                   Total: ₹{grandTotal.toLocaleString('en-IN')}
                 </span>

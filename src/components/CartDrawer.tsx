@@ -29,8 +29,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   if (!isOpen) return null;
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const isFreeDelivery = subtotal >= 999 || (appliedPromo && appliedPromo.code === 'FREESHIP');
-  const deliveryFee = subtotal === 0 ? 0 : isFreeDelivery ? 0 : 99;
+  const isFreeDelivery = true;
+  const deliveryFee = 0;
 
   let discount = 0;
   if (appliedPromo) {
@@ -41,10 +41,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     }
   }
 
-  const grandTotal = Math.max(0, subtotal - discount + deliveryFee);
-  const freeShippingThreshold = 999;
-  const amountToFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
-  const progressPercent = Math.min(100, Math.round((subtotal / freeShippingThreshold) * 100));
+  const grandTotal = Math.max(0, subtotal - discount);
+  const freeShippingThreshold = 0;
+  const amountToFreeShipping = 0;
+  const progressPercent = 100;
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,20 +107,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <div className="flex items-center justify-between text-xs font-medium text-neutral-700 mb-1.5">
                 <span className="flex items-center gap-1.5">
                   <Truck className="w-3.5 h-3.5 text-black" />
-                  {isFreeDelivery ? (
-                    <span className="text-black font-semibold">Complimentary Delivery unlocked</span>
-                  ) : (
-                    <span>
-                      Add <strong>₹{amountToFreeShipping.toLocaleString('en-IN')}</strong> for Free Delivery
-                    </span>
-                  )}
+                  <span className="text-black font-semibold">Complimentary Express Delivery Unlocked · FREE (₹0)</span>
                 </span>
-                <span className="tabular-nums font-mono text-[11px]">{progressPercent}%</span>
+                <span className="tabular-nums font-mono text-[11px] text-emerald-700 font-bold">100%</span>
               </div>
               <div className="w-full bg-neutral-200 h-1 overflow-hidden">
                 <div
                   className="bg-black h-full transition-all duration-300"
-                  style={{ width: `${progressPercent}%` }}
+                  style={{ width: '100%' }}
                 />
               </div>
             </div>
@@ -290,10 +284,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   </div>
                 )}
 
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span>Shipping</span>
-                  <span className="font-bold text-stone-900 tabular-nums">
-                    {deliveryFee === 0 ? <span className="text-[#7a8e12]">FREE</span> : `₹${deliveryFee}`}
+                  <span className="font-bold text-emerald-700 font-mono text-xs">
+                    FREE (₹0)
                   </span>
                 </div>
 

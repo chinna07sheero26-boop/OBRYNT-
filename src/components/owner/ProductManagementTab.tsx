@@ -360,6 +360,8 @@ export const ProductManagementTab: React.FC<ProductManagementTabProps> = ({
       color: formColors[0] || '#171717',
       colorName: 'Standard',
       wholesalePrice: formWholesalePrice ? Number(formWholesalePrice) : undefined,
+      supplierPrice: formWholesalePrice ? Number(formWholesalePrice) : undefined,
+      markupAmount: 40,
       supplierId: formSupplierId || undefined,
       supplierName: matchedSupplier ? matchedSupplier.brandName : undefined,
       tag: formStatus === 'out_of_stock' ? 'SOLD OUT' : 'NEW',
@@ -712,6 +714,10 @@ export const ProductManagementTab: React.FC<ProductManagementTabProps> = ({
                             </span>
                           )}
                         </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[9px] text-stone-400">
+                          <span>Supplier: ₹{(p.supplierPrice ?? p.wholesalePrice ?? Math.max(0, p.price - 40)).toLocaleString('en-IN')}</span>
+                          <span className="text-emerald-400 font-bold bg-emerald-950/60 px-1 py-0.2 rounded border border-emerald-800/60">+₹40 Rule</span>
+                        </div>
                       </td>
 
                       {/* Stock */}
@@ -990,14 +996,55 @@ export const ProductManagementTab: React.FC<ProductManagementTabProps> = ({
                 </div>
 
                 {/* 2. Pricing & Stock */}
-                <div className="p-4 rounded-2xl bg-stone-900/60 border border-stone-800 space-y-3">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-[#d7ff3f] block">
-                    2. Pricing & Inventory Controls
-                  </span>
+                <div className="p-4 rounded-2xl bg-stone-900/60 border border-stone-800 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-white flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>2. Pricing & Automatic +₹40 Rule</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                      OBRYNT Price = Supplier Price + ₹40
+                    </span>
+                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-stone-300 mb-1">
+                        Supplier Price (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formWholesalePrice || 0}
+                        onChange={(e) => {
+                          const cost = Math.max(0, Number(e.target.value));
+                          setFormWholesalePrice(cost);
+                          // Automatically calculate Selling Price = Supplier Price + ₹40
+                          if (cost > 0) {
+                            setFormPrice(cost + 40);
+                            if (!formOriginalPrice || formOriginalPrice <= cost + 40) {
+                              setFormOriginalPrice(Math.round((cost + 40) * 1.35));
+                            }
+                          }
+                        }}
+                        placeholder="Supplier Cost"
+                        className="w-full bg-[#181818] border border-stone-700 rounded-xl px-3 py-2 text-xs font-black text-stone-200 tabular-nums outline-hidden focus:border-white"
+                      />
+                      <span className="text-[9px] text-stone-500 mt-0.5 block">Original Cost</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-stone-300 mb-1">
+                        Pricing Rule
+                      </label>
+                      <div className="w-full bg-[#181818] border border-emerald-900/60 rounded-xl px-3 py-2 text-xs font-black text-emerald-400 font-mono text-center">
+                        +₹40 Markup
+                      </div>
+                      <span className="text-[9px] text-emerald-500 mt-0.5 block text-center">Global Standard</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-white mb-1">
                         Selling Price (₹) *
                       </label>
                       <input
@@ -1006,20 +1053,48 @@ export const ProductManagementTab: React.FC<ProductManagementTabProps> = ({
                         min="1"
                         value={formPrice}
                         onChange={(e) => setFormPrice(Number(e.target.value))}
-                        className="w-full bg-[#181818] border border-stone-700 rounded-xl px-3 py-2 text-xs font-black text-white tabular-nums outline-hidden focus:border-[#d7ff3f]"
+                        className="w-full bg-[#181818] border border-stone-700 rounded-xl px-3 py-2 text-xs font-black text-white tabular-nums outline-hidden focus:border-white"
                       />
+                      <span className="text-[9px] text-emerald-400 mt-0.5 block font-bold">Delivery: FREE (₹0)</span>
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-stone-300 mb-1">
-                        Original Price / MRP (₹)
+                        Original MRP (₹)
                       </label>
                       <input
                         type="number"
                         value={formOriginalPrice}
                         onChange={(e) => setFormOriginalPrice(Number(e.target.value))}
-                        className="w-full bg-[#181818] border border-stone-700 rounded-xl px-3 py-2 text-xs font-bold text-stone-400 tabular-nums outline-hidden focus:border-[#d7ff3f]"
+                        className="w-full bg-[#181818] border border-stone-700 rounded-xl px-3 py-2 text-xs font-bold text-stone-400 tabular-nums outline-hidden focus:border-stone-500"
                       />
+                      <span className="text-[9px] text-stone-500 mt-0.5 block">Crossed-out MRP</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-xs font-bold text-stone-300 mb-1">
+                        Supplying Company (Source)
+                      </label>
+                      <select
+                        value={formSupplierId}
+                        onChange={(e) => {
+                          setFormSupplierId(e.target.value);
+                          const matched = suppliers.find((s) => s.id === e.target.value);
+                          if (matched) {
+                            setFormBrand(matched.brandName);
+                          }
+                        }}
+                        className="w-full bg-[#181818] border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-300 outline-hidden focus:border-white"
+                      >
+                        <option value="">OBRYNT Atelier (Direct / Verified)</option>
+                        {suppliers.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.brandName} ({s.name})
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
@@ -1032,46 +1107,7 @@ export const ProductManagementTab: React.FC<ProductManagementTabProps> = ({
                         min="0"
                         value={formStock}
                         onChange={(e) => setFormStock(Number(e.target.value))}
-                        className="w-full bg-[#181818] border border-stone-700 rounded-xl px-3 py-2 text-xs font-black text-white tabular-nums outline-hidden focus:border-[#d7ff3f]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <label className="block text-xs font-bold text-stone-300 mb-1">
-                        Supplying Company (Optional)
-                      </label>
-                      <select
-                        value={formSupplierId}
-                        onChange={(e) => {
-                          setFormSupplierId(e.target.value);
-                          const matched = suppliers.find((s) => s.id === e.target.value);
-                          if (matched) {
-                            setFormBrand(matched.brandName);
-                          }
-                        }}
-                        className="w-full bg-[#181818] border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-300 outline-hidden focus:border-[#d7ff3f]"
-                      >
-                        <option value="">OBRYNT Atelier (In-House)</option>
-                        {suppliers.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.brandName} ({s.name})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-stone-300 mb-1">
-                        Wholesale Cost (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={formWholesalePrice}
-                        onChange={(e) => setFormWholesalePrice(Number(e.target.value))}
-                        placeholder="Cost of goods"
-                        className="w-full bg-[#181818] border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-300 outline-hidden focus:border-[#d7ff3f]"
+                        className="w-full bg-[#181818] border border-stone-700 rounded-xl px-3 py-2 text-xs font-black text-white tabular-nums outline-hidden focus:border-white"
                       />
                     </div>
                   </div>

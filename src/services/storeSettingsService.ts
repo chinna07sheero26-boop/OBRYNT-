@@ -7,9 +7,9 @@ export const PROMO_CODES_KEY = 'obrynt_promo_codes';
 export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   storeName: 'OBRYNT',
   tagline: 'Wear Your Identity · Fashion Without Limits',
-  announcementText: 'INTRODUCING OBRYNT · FASHION WITHOUT LIMITS · DESIGN IT YOUR WAY',
-  freeDeliveryThreshold: 999,
-  standardDeliveryFee: 99,
+  announcementText: 'COMPLIMENTARY EXPRESS DELIVERY ON ALL ORDERS · OFFICIAL OBRYNT STORE',
+  freeDeliveryThreshold: 0,
+  standardDeliveryFee: 0,
   currencySymbol: '₹',
   contactEmail: 'owner@obrynt.example',
   contactPhone: '+91 98765 43210',
@@ -61,7 +61,13 @@ export function getStoredStoreSettings(): StoreSettings {
       localStorage.setItem(STORE_SETTINGS_KEY, JSON.stringify(DEFAULT_STORE_SETTINGS));
       return DEFAULT_STORE_SETTINGS;
     }
-    return { ...DEFAULT_STORE_SETTINGS, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    return {
+      ...DEFAULT_STORE_SETTINGS,
+      ...parsed,
+      freeDeliveryThreshold: 0,
+      standardDeliveryFee: 0,
+    };
   } catch {
     return DEFAULT_STORE_SETTINGS;
   }
