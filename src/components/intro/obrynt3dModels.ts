@@ -18,66 +18,12 @@ export interface IntroSceneMaterials {
   knitFabricMat: THREE.MeshPhysicalMaterial;
 }
 
-function createLuxuryTextPlaqueTexture(maxAnisotropy: number): {
-  map: THREE.CanvasTexture;
-  bumpMap: THREE.CanvasTexture;
-} {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 256;
-  const ctx = canvas.getContext('2d')!;
-
-  // Dark obsidian background with subtle metallic grain
-  const bgGrad = ctx.createLinearGradient(0, 0, 1024, 256);
-  bgGrad.addColorStop(0, '#0a0a0c');
-  bgGrad.addColorStop(0.5, '#161513');
-  bgGrad.addColorStop(1, '#09090b');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, 1024, 256);
-
-  // Subtle horizontal metallic rules
-  const goldGrad = ctx.createLinearGradient(120, 0, 904, 0);
-  goldGrad.addColorStop(0, '#8a6f3d');
-  goldGrad.addColorStop(0.25, '#f2d99b');
-  goldGrad.addColorStop(0.5, '#fff4d4');
-  goldGrad.addColorStop(0.75, '#d7b56d');
-  goldGrad.addColorStop(1, '#8a6f3d');
-
-  ctx.fillStyle = goldGrad;
-  ctx.fillRect(60, 22, 904, 5);
-  ctx.fillRect(60, 229, 904, 5);
-
-  // Crisp OBRYNT lettering
-  ctx.font = '700 112px "Cinzel", Georgia, serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = goldGrad;
-  ctx.fillText('O B R Y N T', 512, 132);
-
-  const map = new THREE.CanvasTexture(canvas);
-  map.colorSpace = THREE.SRGBColorSpace;
-  map.anisotropy = maxAnisotropy;
-
-  // Bump map for raised metallic engraving
-  const bumpCanvas = document.createElement('canvas');
-  bumpCanvas.width = 1024;
-  bumpCanvas.height = 256;
-  const bCtx = bumpCanvas.getContext('2d')!;
-  bCtx.fillStyle = '#202020';
-  bCtx.fillRect(0, 0, 1024, 256);
-  bCtx.fillStyle = '#ffffff';
-  bCtx.fillRect(60, 22, 904, 5);
-  bCtx.fillRect(60, 229, 904, 5);
-  bCtx.font = '700 112px "Cinzel", Georgia, serif';
-  bCtx.textAlign = 'center';
-  bCtx.textBaseline = 'middle';
-  bCtx.fillText('O B R Y N T', 512, 132);
-
-  const bumpMap = new THREE.CanvasTexture(bumpCanvas);
-  bumpMap.colorSpace = THREE.NoColorSpace;
-  bumpMap.anisotropy = maxAnisotropy;
-
-  return { map, bumpMap };
+function createUploadedLogoTexture(maxAnisotropy: number): THREE.Texture {
+  const loader = new THREE.TextureLoader();
+  const tex = loader.load('/assets/aistudio/IMG_20261113_125908_9181ec1f.jpg');
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = maxAnisotropy;
+  return tex;
 }
 
 function createWatchDialTexture(maxAnisotropy: number): THREE.CanvasTexture {
@@ -192,13 +138,12 @@ export function createIntroMaterials(
   isSoftwareGl: boolean,
   maxAnisotropy: number
 ): { materials: IntroSceneMaterials; texturesToDispose: THREE.Texture[] } {
-  const plaqueTex = createLuxuryTextPlaqueTexture(maxAnisotropy);
+  const uploadedLogoTex = createUploadedLogoTexture(maxAnisotropy);
   const watchDialTex = createWatchDialTexture(maxAnisotropy);
   const knitTex = createKnitFabricTexture(maxAnisotropy);
 
   const texturesToDispose = [
-    plaqueTex.map,
-    plaqueTex.bumpMap,
+    uploadedLogoTex,
     watchDialTex,
     knitTex.map,
     knitTex.bumpMap,
@@ -299,12 +244,11 @@ export function createIntroMaterials(
       roughness: 0.42,
     }),
     emblemFaceMat: new THREE.MeshPhysicalMaterial({
-      map: plaqueTex.map,
-      bumpMap: plaqueTex.bumpMap,
-      bumpScale: 0.025,
-      metalness: 0.72,
-      roughness: 0.25,
-      clearcoat: 0.65,
+      map: uploadedLogoTex,
+      metalness: 0.25,
+      roughness: 0.28,
+      clearcoat: 0.75,
+      clearcoatRoughness: 0.12,
     }),
     watchDialMat: new THREE.MeshStandardMaterial({
       map: watchDialTex,
@@ -326,133 +270,47 @@ export function createIntroMaterials(
 }
 
 /**
- * Builds the 3D Official OBRYNT Metallic Crest Emblem (8-part composite sculpture):
- * - Upper diamond frame with inner sculpted 'O' ring
- * - Dual symmetrical architectural wing blades (Champagne Gold & Platinum)
- * - Central horizontal metallic OBRYNT nameplate with upper & lower rails
- * - Outer orbital luxury halo ring & lower crescent arc
+ * Builds the 3D Official OBRYNT Medallion Plaque displaying the newly uploaded
+ * OBRYNT brand image cleanly at its original 1064:832 proportions inside a metallic bezel.
  */
 export function buildObryntEmblem3D(mats: IntroSceneMaterials): THREE.Group {
   const group = new THREE.Group();
 
-  // 1. Outer Champagne Gold Crest Halo Ring
-  const outerRing = new THREE.Mesh(new THREE.TorusGeometry(1.42, 0.035, 20, 96), mats.champagneGold);
-  outerRing.castShadow = true;
-  group.add(outerRing);
+  // Exact proportions of uploaded image (1064 x 832 => ~1.2788 : 1)
+  const w = 2.68;
+  const h = 2.1;
 
-  // 2. Inner Platinum Accent Ring
-  const innerRing = new THREE.Mesh(new THREE.TorusGeometry(1.33, 0.014, 16, 80), mats.platinumSilver);
-  group.add(innerRing);
-
-  // 3. Upper Diamond Crest Frame (4 beveled chamfer bars forming a luxury diamond)
-  const diamondGroup = new THREE.Group();
-  diamondGroup.position.set(0, 0.76, 0.06);
-  const diamondShape = new THREE.Shape();
-  diamondShape.moveTo(0, 0.44);
-  diamondShape.lineTo(0.44, 0);
-  diamondShape.lineTo(0, -0.44);
-  diamondShape.lineTo(-0.44, 0);
-  diamondShape.closePath();
-
-  const hole = new THREE.Path();
-  hole.moveTo(0, 0.34);
-  hole.lineTo(0.34, 0);
-  hole.lineTo(0, -0.34);
-  hole.lineTo(-0.34, 0);
-  hole.closePath();
-  diamondShape.holes.push(hole);
-
-  const diamondGeo = new THREE.ExtrudeGeometry(diamondShape, {
-    depth: 0.08,
-    bevelEnabled: true,
-    bevelThickness: 0.02,
-    bevelSize: 0.018,
-    bevelSegments: 3,
-  });
-  diamondGeo.center();
-  const diamondMesh = new THREE.Mesh(diamondGeo, mats.champagneGold);
-  diamondMesh.castShadow = true;
-  diamondGroup.add(diamondMesh);
-
-  // 4. Sculpted 'O' Monogram inside the Diamond Crest
-  const monogramO = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.036, 16, 48), mats.platinumSilver);
-  monogramO.scale.set(0.84, 1.15, 1.0);
-  monogramO.position.z = 0.02;
-  diamondGroup.add(monogramO);
-  group.add(diamondGroup);
-
-  // 5. Symmetrical Baroque/Architectural Wing Flourishes (left & right)
-  const makeWingBlade = (side: 1 | -1) => {
-    const bladeGroup = new THREE.Group();
-    const layers = [
-      { scale: 1.0, y: 0.56, rot: 0.28, mat: mats.platinumSilver, z: 0.0 },
-      { scale: 0.85, y: 0.42, rot: 0.48, mat: mats.champagneGold, z: 0.03 },
-      { scale: 0.68, y: 0.28, rot: 0.65, mat: mats.platinumSilver, z: -0.02 },
-    ];
-    layers.forEach((l) => {
-      const s = new THREE.Shape();
-      s.moveTo(0, 0);
-      s.quadraticCurveTo(side * 0.55 * l.scale, 0.38 * l.scale, side * 1.15 * l.scale, 0.2 * l.scale);
-      s.quadraticCurveTo(side * 0.62 * l.scale, -0.08 * l.scale, 0, -0.1 * l.scale);
-      s.closePath();
-
-      const g = new THREE.ExtrudeGeometry(s, {
-        depth: 0.05,
-        bevelEnabled: true,
-        bevelThickness: 0.014,
-        bevelSize: 0.012,
-        bevelSegments: 2,
-      });
-      g.center();
-      const m = new THREE.Mesh(g, l.mat);
-      m.position.set(side * (0.62 * l.scale), l.y, l.z);
-      m.rotation.z = side * -l.rot;
-      m.castShadow = true;
-      bladeGroup.add(m);
-    });
-    return bladeGroup;
-  };
-  group.add(makeWingBlade(1));
-  group.add(makeWingBlade(-1));
-
-  // 6. Central Horizontal Architectural Plaque (with engraved OBRYNT face front & back)
-  const plaqueCore = new THREE.Mesh(new THREE.BoxGeometry(2.85, 0.66, 0.14), mats.obsidianGloss);
+  // Obsidian Gloss Plaque Backing
+  const plaqueCore = new THREE.Mesh(new THREE.BoxGeometry(w + 0.12, h + 0.12, 0.12), mats.obsidianGloss);
   plaqueCore.castShadow = true;
   group.add(plaqueCore);
 
-  const frontFace = new THREE.Mesh(new THREE.PlaneGeometry(2.74, 0.6), mats.emblemFaceMat);
-  frontFace.position.z = 0.075;
+  // Subtle Champagne Gold Outer Frame Rails
+  const topRail = new THREE.Mesh(new THREE.BoxGeometry(w + 0.16, 0.04, 0.15), mats.champagneGold);
+  topRail.position.y = (h + 0.12) / 2;
+  group.add(topRail);
+
+  const bottomRail = new THREE.Mesh(new THREE.BoxGeometry(w + 0.16, 0.04, 0.15), mats.champagneGold);
+  bottomRail.position.y = -(h + 0.12) / 2;
+  group.add(bottomRail);
+
+  const leftRail = new THREE.Mesh(new THREE.BoxGeometry(0.04, h + 0.16, 0.15), mats.champagneGold);
+  leftRail.position.x = -(w + 0.12) / 2;
+  group.add(leftRail);
+
+  const rightRail = new THREE.Mesh(new THREE.BoxGeometry(0.04, h + 0.16, 0.15), mats.champagneGold);
+  rightRail.position.x = (w + 0.12) / 2;
+  group.add(rightRail);
+
+  // Front & Back Faces displaying ONLY the uploaded OBRYNT logo image
+  const frontFace = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mats.emblemFaceMat);
+  frontFace.position.z = 0.065;
   group.add(frontFace);
 
-  const backFace = new THREE.Mesh(new THREE.PlaneGeometry(2.74, 0.6), mats.emblemFaceMat);
-  backFace.position.z = -0.075;
+  const backFace = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mats.emblemFaceMat);
+  backFace.position.z = -0.065;
   backFace.rotation.y = Math.PI;
   group.add(backFace);
-
-  // Upper & lower metallic bezel bars framing the plaque
-  const topBar = new THREE.Mesh(new THREE.BoxGeometry(2.96, 0.055, 0.18), mats.champagneGold);
-  topBar.position.y = 0.34;
-  group.add(topBar);
-
-  const bottomBar = new THREE.Mesh(new THREE.BoxGeometry(2.96, 0.055, 0.18), mats.champagneGold);
-  bottomBar.position.y = -0.34;
-  group.add(bottomBar);
-
-  // 7. Lower Crest Flourish & Inverted Medallion Tip
-  const lowerFinial = new THREE.Mesh(new THREE.OctahedronGeometry(0.18, 0), mats.champagneGold);
-  lowerFinial.position.set(0, -0.78, 0.04);
-  lowerFinial.scale.set(1.2, 1.4, 0.45);
-  group.add(lowerFinial);
-
-  const lowerArcLeft = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.025, 12, 32, Math.PI * 0.55), mats.platinumSilver);
-  lowerArcLeft.position.set(-0.22, -0.52, 0.02);
-  lowerArcLeft.rotation.z = Math.PI * 1.1;
-  group.add(lowerArcLeft);
-
-  const lowerArcRight = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.025, 12, 32, Math.PI * 0.55), mats.platinumSilver);
-  lowerArcRight.position.set(0.22, -0.52, 0.02);
-  lowerArcRight.rotation.z = -Math.PI * 0.65;
-  group.add(lowerArcRight);
 
   return group;
 }

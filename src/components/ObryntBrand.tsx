@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Sparkles, Award, CheckCircle2, Copy, Check, Package, X } from 'lucide-react';
 
-export const OBRYNT_LOGO_SRC = './obrynt-logo.jpg';
-export const OBRYNT_EMBLEM_SRC = './obrynt-emblem.jpg';
+export const OBRYNT_LOGO_SRC = '/assets/aistudio/IMG_20261113_125908_9181ec1f.jpg';
+export const OBRYNT_EMBLEM_SRC = '/obrynt-emblem.jpg';
 
 interface ObryntLogoProps {
   variant?: 'emblem' | 'horizontal' | 'stacked' | 'badge';
@@ -55,7 +55,7 @@ export const ObryntLogo: React.FC<ObryntLogoProps> = ({
         <img
           src={OBRYNT_EMBLEM_SRC}
           alt="OBRYNT Official Emblem"
-          className="w-full h-full object-cover rounded-full"
+          className="w-full h-full object-contain rounded-full bg-black"
         />
       </div>
     );
@@ -71,7 +71,7 @@ export const ObryntLogo: React.FC<ObryntLogoProps> = ({
         } ${className}`}
       >
         <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 border border-stone-600 bg-black">
-          <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-cover" />
+          <img src={OBRYNT_EMBLEM_SRC} alt="OBRYNT" className="w-full h-full object-contain bg-black" />
         </div>
         <div className="flex items-center gap-1.5 font-black text-xs tracking-[0.2em] text-stone-100">
           <span>OBRYNT</span>
@@ -97,7 +97,7 @@ export const ObryntLogo: React.FC<ObryntLogoProps> = ({
           <img
             src={OBRYNT_LOGO_SRC}
             alt="OBRYNT Crest"
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain bg-black"
           />
         </div>
         <div
@@ -125,14 +125,14 @@ export const ObryntLogo: React.FC<ObryntLogoProps> = ({
       } ${className}`}
       aria-label="OBRYNT Official Brand"
     >
-      {/* Official Silver Circular Emblem */}
+      {/* Official Circular Emblem */}
       <div
         className={`rounded-full overflow-hidden shrink-0 border border-stone-700/80 bg-black shadow-sm ${emblemSizes[size]}`}
       >
         <img
           src={OBRYNT_EMBLEM_SRC}
           alt="OBRYNT Emblem"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain bg-black"
         />
       </div>
 
@@ -188,7 +188,7 @@ export const ObryntAuthenticitySeal: React.FC<{
       className={`bg-gradient-to-br from-[#1c1c1c] via-[#111111] to-[#0a0a0a] border border-stone-700/80 rounded-2xl p-3.5 sm:p-4 text-white shadow-xl flex items-center gap-3.5 ${className}`}
     >
       <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-stone-600 bg-black shadow-inner">
-        <img src={OBRYNT_LOGO_SRC} alt="OBRYNT Authenticity" className="w-full h-full object-cover" />
+        <img src={OBRYNT_LOGO_SRC} alt="OBRYNT Authenticity" className="w-full h-full object-contain bg-black" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-stone-200">
