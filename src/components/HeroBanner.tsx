@@ -6,12 +6,14 @@ interface HeroBannerProps {
   onExploreClick: () => void;
   onCustomStudioClick: () => void;
   onOpenBrandAssets?: () => void;
+  onReplayIntro?: () => void;
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
   onExploreClick,
   onCustomStudioClick,
   onOpenBrandAssets,
+  onReplayIntro,
 }) => {
   return (
     <section className="relative my-4 sm:my-8 overflow-hidden bg-black text-white border border-neutral-900">
@@ -75,6 +77,15 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 className="hidden md:inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white uppercase tracking-[0.16em] transition-colors ml-4 cursor-pointer"
               >
                 <span>Brand Identity</span>
+              </button>
+            )}
+
+            {onReplayIntro && (
+              <button
+                onClick={onReplayIntro}
+                className="inline-flex items-center gap-1.5 text-xs text-[#e6c782] hover:text-white uppercase tracking-[0.16em] transition-colors sm:ml-2 cursor-pointer"
+              >
+                <span>3D Opening Film</span>
               </button>
             )}
           </div>

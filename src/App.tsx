@@ -83,6 +83,7 @@ import { CompanyAccount, CompanyStaffSession, FactoryPartner, FactorySession } f
 import { Newsletter } from './components/Newsletter';
 import { Footer } from './components/Footer';
 import { ObryntWatermark, ObryntBrandMaterialsModal } from './components/ObryntBrand';
+import { ObryntIntro3D, INTRO_SESSION_STORAGE_KEY } from './components/intro/ObryntIntro3D';
 import { ArrowUpDown, ShieldCheck, Sparkles, SlidersHorizontal, Check, LogOut } from 'lucide-react';
 
 export default function App() {
@@ -92,6 +93,30 @@ export default function App() {
   // Store Settings & Promo Codes (Managed by Owner)
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => getStoredStoreSettings());
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>(() => getStoredPromoCodes());
+
+  // 3D Opening Intro (plays once per browsing session on public storefront)
+  const [showIntroAnimation, setShowIntroAnimation] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const path = window.location.pathname;
+      const search = window.location.search;
+      const hash = window.location.hash;
+      const isSpecialPortal =
+        path.startsWith('/admin') ||
+        path.startsWith('/staff') ||
+        search.includes('owner=') ||
+        search.includes('staff=') ||
+        search.includes('delivery=') ||
+        search.includes('factory=') ||
+        hash === '#admin' ||
+        hash === '#owner' ||
+        hash === '#staff';
+      if (isSpecialPortal) return false;
+      return sessionStorage.getItem(INTRO_SESSION_STORAGE_KEY) !== '1';
+    } catch {
+      return false;
+    }
+  });
 
   // Owner Authentication & Access State (Cryptographically Verified Session)
   // Public customers will have isOwnerAuthenticated = false by default
@@ -866,6 +891,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white text-black flex flex-col font-sans relative selection:bg-black selection:text-white">
+      {/* Cinematic 3D Website Opening Animation (First visit per browsing session) */}
+      <ObryntIntro3D
+        isOpen={showIntroAnimation}
+        onComplete={() => setShowIntroAnimation(false)}
+      />
+
       {/* Top Navbar */}
       <Navbar
         cartCount={cart.reduce((s, x) => s + x.quantity, 0)}
@@ -927,6 +958,7 @@ export default function App() {
           onExploreClick={scrollToShop}
           onCustomStudioClick={scrollToStudio}
           onOpenBrandAssets={() => setIsBrandMaterialsOpen(true)}
+          onReplayIntro={() => setShowIntroAnimation(true)}
         />
 
         {/* Minimalist Trust Guarantees */}
