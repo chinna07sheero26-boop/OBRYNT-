@@ -12,6 +12,11 @@ interface FooterProps {
   onOpenStaffLogin?: () => void;
   isDeliveryAuth?: boolean;
   onOpenDeliveryLogin?: () => void;
+  isVendorAuth?: boolean;
+  onOpenVendorLogin?: () => void;
+  onOpenPartnerOnboarding?: () => void;
+  onOpenGarmentStaffLogin?: () => void;
+  onOpenRoadsideStaffLogin?: () => void;
   onOpenBrandAssets?: () => void;
 }
 
@@ -25,6 +30,11 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenStaffLogin,
   isDeliveryAuth = false,
   onOpenDeliveryLogin,
+  isVendorAuth = false,
+  onOpenVendorLogin,
+  onOpenPartnerOnboarding,
+  onOpenGarmentStaffLogin,
+  onOpenRoadsideStaffLogin,
   onOpenBrandAssets,
 }) => {
   const currentYear = new Date().getFullYear();
@@ -227,6 +237,47 @@ export const Footer: React.FC<FooterProps> = ({
                 title="Company Staff Portal"
               >
                 {isStaffAuthenticated ? '• Staff Console (Active)' : '• Staff Console'}
+              </button>
+            )}
+
+            {/* Discreet Partner Registration & Partner Login */}
+            {onOpenPartnerOnboarding && (
+              <button
+                onClick={onOpenPartnerOnboarding}
+                className="text-[10px] text-neutral-400 hover:text-white uppercase tracking-wider transition-colors cursor-pointer"
+                title="Register as Supplier, Garment Shop, or Roadside Store"
+              >
+                • Partner Onboarding
+              </button>
+            )}
+
+            {onOpenVendorLogin && (
+              <button
+                onClick={onOpenVendorLogin}
+                className="text-[10px] text-neutral-400 hover:text-white uppercase tracking-wider transition-colors cursor-pointer"
+                title="Partner Console Login"
+              >
+                {isVendorAuth ? '• Partner Portal (Active)' : '• Partner Portal'}
+              </button>
+            )}
+
+            {onOpenGarmentStaffLogin && (
+              <button
+                onClick={onOpenGarmentStaffLogin}
+                className="text-[10px] text-neutral-400 hover:text-white uppercase tracking-wider transition-colors cursor-pointer"
+                title="Private Garment Shop Staff Login"
+              >
+                • Garment Staff Login
+              </button>
+            )}
+
+            {onOpenRoadsideStaffLogin && (
+              <button
+                onClick={onOpenRoadsideStaffLogin}
+                className="text-[10px] text-neutral-400 hover:text-white uppercase tracking-wider transition-colors cursor-pointer"
+                title="Private Roadside Store Staff Login"
+              >
+                • Roadside Staff Login
               </button>
             )}
 

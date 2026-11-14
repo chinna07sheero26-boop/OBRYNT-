@@ -53,6 +53,10 @@ export function mapDbRowToProduct(row: any): Product {
     supplierPrice: row.wholesale_cost ? Number(row.wholesale_cost) : (Number(row.retail_price) > 40 ? Number(row.retail_price) - 40 : undefined),
     wholesalePrice: row.wholesale_cost ? Number(row.wholesale_cost) : undefined,
     markupAmount: 40,
+    vendorId: row.vendor_id || undefined,
+    vendorType: row.vendor_type || undefined,
+    shopId: row.shop_id || undefined,
+    approvalStatus: row.approval_status || (row.is_approved === false ? 'pending_approval' : 'approved'),
     rating: row.rating ? Number(row.rating) : 4.8,
     reviewCount: row.review_count ? Number(row.review_count) : 24,
     material: row.material || undefined,
@@ -94,6 +98,10 @@ export function mapProductToDbRow(product: Product): Record<string, any> {
     colors: product.colors || (product.color ? [product.color] : ['#171717']),
     supplier_id: product.supplierId || null,
     wholesale_cost: rawCost ? Number(rawCost) : null,
+    vendor_id: product.vendorId || null,
+    vendor_type: product.vendorType || null,
+    shop_id: product.shopId || null,
+    approval_status: product.approvalStatus || (!product.needsReview ? 'approved' : 'pending_approval'),
   };
 }
 
@@ -441,34 +449,63 @@ export async function loadUnifiedProductCatalogue(): Promise<{
   source: 'supabase' | 'localstorage' | 'defaults';
   remoteCount: number;
 }> {
+  let baseProducts: Product[] = OBRYNT_PRODUCTS;
+  let source: 'supabase' | 'localstorage' | 'defaults' = 'defaults';
+  let remoteCount = 0;
+
   // 1. Check Supabase
   const sbResult = await fetchProductsFromSupabase();
   if (sbResult.success && sbResult.products.length > 0) {
-    // Cache the Supabase products
     try {
       localStorage.setItem(STORAGE_KEYS.ALL_PRODUCTS, JSON.stringify(sbResult.products));
     } catch {}
-    return {
-      products: sbResult.products,
-      source: 'supabase',
-      remoteCount: sbResult.products.length,
-    };
+    baseProducts = sbResult.products;
+    source = 'supabase';
+    remoteCount = sbResult.products.length;
+  } else {
+    // 2. Check local storage
+    const localList = getLocalProducts();
+    if (localList.length > 0) {
+      baseProducts = localList;
+      source = 'localstorage';
+    }
   }
 
-  // 2. Check local storage
-  const localList = getLocalProducts();
-  if (localList.length > 0) {
-    return {
-      products: localList,
-      source: 'localstorage',
-      remoteCount: 0,
-    };
+  // 3. Merge server-approved Dukani & Seller marketplace products without duplicating SKUs
+  try {
+    const res = await fetch('/api/storefront/approved-vendor-products');
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.success && Array.isArray(data.products) && data.products.length > 0) {
+        const mergedMap = new Map<string, Product>();
+        // Keep base products (excluding unapproved vendor items)
+        baseProducts.forEach((p) => {
+          if (p.vendorId && p.approvalStatus && p.approvalStatus !== 'approved') return;
+          mergedMap.set(p.sku, p);
+        });
+        // Upsert live approved vendor products from server
+        data.products.forEach((vp: Product) => {
+          mergedMap.set(vp.sku, vp);
+        });
+        return {
+          products: Array.from(mergedMap.values()),
+          source,
+          remoteCount,
+        };
+      }
+    }
+  } catch {
+    // Non-blocking fallback when server is initializing
   }
 
-  // 3. Fallback to default catalog
+  // Filter out any unapproved vendor items
+  const cleanBase = baseProducts.filter(
+    (p) => !(p.vendorId && p.approvalStatus && p.approvalStatus !== 'approved')
+  );
+
   return {
-    products: OBRYNT_PRODUCTS,
-    source: 'defaults',
-    remoteCount: 0,
+    products: cleanBase,
+    source,
+    remoteCount,
   };
 }

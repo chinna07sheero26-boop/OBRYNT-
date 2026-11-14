@@ -8,6 +8,7 @@ import Razorpay from 'razorpay';
 import { GoogleGenAI } from '@google/genai';
 import { classifyProductLocally, buildGeminiCategorizationPrompt } from './src/utils/aiTaxonomyEngine';
 import { generateThemedArtworkVariations } from './src/utils/aiArtworkGenerator';
+import { createVendorMarketplaceRouter } from './server/vendorMarketplaceEngine';
 
 dotenv.config();
 
@@ -17,7 +18,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
 
 // =========================================================================
 // OBRYNT STAFF PORTAL SECURITY CONFIGURATION (SERVER-SIDE ONLY)
@@ -2678,6 +2679,11 @@ app.post('/api/factory/sync', (req: Request, res: Response) => {
   }
   res.status(400).json({ success: false, error: 'Invalid factory payload' });
 });
+
+// =========================================================================
+// OBRYNT DUKANI (SHOP OWNER) & SELLER MULTI-VENDOR MARKETPLACE API
+// =========================================================================
+app.use('/api', createVendorMarketplaceRouter());
 
 // =========================================================================
 // VITE / STATIC SERVING

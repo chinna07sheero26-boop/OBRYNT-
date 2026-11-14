@@ -30,6 +30,7 @@ import {
   PackageCheck,
   ShieldCheck,
   Factory,
+  Store,
 } from 'lucide-react';
 import {
   Product,
@@ -65,6 +66,7 @@ import { BulkImportTab } from './owner/BulkImportTab';
 import { DeliveryManagementTab } from './owner/DeliveryManagementTab';
 import { CompanyManagementTab } from './owner/CompanyManagementTab';
 import { FactoryPartnersTab } from './owner/FactoryPartnersTab';
+import { VendorManagementTab } from './owner/VendorManagementTab';
 import { OBRYNT_EMBLEM_SRC, OBRYNT_LOGO_SRC } from './ObryntBrand';
 
 interface OwnerDashboardProps {
@@ -84,6 +86,7 @@ interface OwnerDashboardProps {
   onOpenDeliveryPortal?: (company?: DeliveryCompany) => void;
   onOpenCompanyPortal?: (company: CompanyAccount) => void;
   onOpenFactoryPortal?: (token: string) => void;
+  onRefreshCatalog?: () => Promise<void> | void;
 }
 
 export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
@@ -103,6 +106,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   onOpenDeliveryPortal,
   onOpenCompanyPortal,
   onOpenFactoryPortal,
+  onRefreshCatalog,
 }) => {
   const [activeTab, setActiveTab] = useState<
     | 'overview'
@@ -113,6 +117,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     | 'promotions'
     | 'customers'
     | 'settings'
+    | 'vendors'
     | 'suppliers'
     | 'fulfilments'
     | 'financials'
@@ -121,6 +126,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     | 'companies'
     | 'factories'
   >('overview');
+  const [pendingVendorApprovals, setPendingVendorApprovals] = useState(0);
 
   // Supplier & Fulfilment State
   const [suppliers, setSuppliers] = useState<Supplier[]>(() => getStoredSuppliers());
@@ -569,6 +575,23 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             <div className="pt-3 pb-1 px-3 text-[10px] font-black uppercase tracking-widest text-stone-500">
               MARKETPLACE & SECURITY
             </div>
+
+            <button
+              onClick={() => setActiveTab('vendors')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
+                activeTab === 'vendors'
+                  ? 'bg-[#d7ff3f] text-[#111111]'
+                  : 'text-stone-300 hover:bg-stone-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Store className="w-4 h-4 text-[#d7ff3f] shrink-0" />
+                <span>Vendor Management</span>
+              </div>
+              <span className={`text-[9px] px-1.5 py-0.2 rounded font-black uppercase ${activeTab === 'vendors' ? 'bg-black text-[#d7ff3f]' : 'bg-[#d7ff3f]/20 text-[#d7ff3f]'}`}>
+                {pendingVendorApprovals > 0 ? `${pendingVendorApprovals} Pending` : 'Dukani'}
+              </span>
+            </button>
 
             <button
               onClick={() => setActiveTab('suppliers')}
@@ -1776,6 +1799,15 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               onShowNotice={onShowNotice}
               onProductPublished={(newProd) => onUpdateProducts([newProd, ...products])}
               onOpenFactoryPortal={onOpenFactoryPortal}
+            />
+          )}
+
+          {/* TAB 15: VENDOR MANAGEMENT (DUKANI SHOP OWNERS & SELLERS) */}
+          {activeTab === 'vendors' && (
+            <VendorManagementTab
+              onShowNotice={onShowNotice}
+              onRefreshStorefrontCatalog={onRefreshCatalog}
+              onPendingApprovalCountChange={setPendingVendorApprovals}
             />
           )}
         </main>

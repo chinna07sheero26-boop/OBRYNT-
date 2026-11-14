@@ -667,4 +667,542 @@ drop policy if exists "Admins manage staging products" on public.import_staging_
 create policy "Admins manage staging products" on public.import_staging_products for all using (public.is_admin_or_owner());
 -- =========================================================================
 
+-- =========================================================================
+-- 19. DUKANI (SHOP OWNER) & SELLER MULTI-VENDOR MARKETPLACE SCHEMA & RLS
+-- =========================================================================
+
+-- Expand profiles roles to cover SUPER_ADMIN, SHOP_OWNER, SELLER, DELIVERY_PARTNER, CUSTOMER
+alter table public.profiles drop constraint if exists profiles_role_check;
+alter table public.profiles add constraint profiles_role_check
+  check (role in ('owner', 'admin', 'super_admin', 'shop_owner', 'seller', 'delivery_partner', 'delivery', 'staff', 'supplier', 'customer'));
+alter table public.profiles add column if not exists vendor_id uuid;
+alter table public.profiles add column if not exists status text default 'active';
+
+-- 19.1 VENDOR PROFILES (Admin-provisioned only; public vendor registration prohibited)
+create table if not exists public.vendor_profiles (
+  id uuid default uuid_generate_v4() primary key,
+  vendor_code text not null unique, -- e.g. 'DUK-1001' or 'SEL-1001'
+  auth_user_id uuid references auth.users(id) on delete set null,
+  account_type text not null check (account_type in ('SHOP_OWNER', 'SELLER')),
+  full_name text not null,
+  business_name text not null,
+  email text not null unique,
+  phone text not null,
+  status text not null default 'active' check (status in ('active', 'inactive', 'suspended', 'blocked')),
+  password_hash text not null, -- scrypt/bcrypt hash only, never plaintext
+  gst_number text,
+  bank_account_holder text,
+  bank_account_masked text,
+  bank_ifsc text,
+  upi_id text,
+  commission_mode text not null default 'percentage' check (commission_mode in ('percentage', 'fixed', 'percentage_plus_fixed')),
+  commission_rate numeric not null default 10.00,
+  fixed_commission numeric not null default 0,
+  pickup_address text,
+  notes text,
+  created_by uuid references auth.users(id) on delete set null,
+  last_login_at timestamp with time zone,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_vendor_profiles_code on public.vendor_profiles(vendor_code);
+create index if not exists idx_vendor_profiles_type on public.vendor_profiles(account_type);
+create index if not exists idx_vendor_profiles_status on public.vendor_profiles(status);
+create index if not exists idx_vendor_profiles_auth on public.vendor_profiles(auth_user_id);
+
+-- 19.2 VENDOR SHOPS (Physical Dukani clothing stores linked to SHOP_OWNER)
+create table if not exists public.vendor_shops (
+  id uuid default uuid_generate_v4() primary key,
+  vendor_id uuid references public.vendor_profiles(id) on delete cascade not null unique,
+  shop_name text not null,
+  owner_name text not null,
+  shop_address text not null default '',
+  city text default '',
+  state text default '',
+  pincode text default '',
+  contact_number text not null default '',
+  shop_photos text[] default array[]::text[],
+  gst_number text,
+  opening_hours text default '10:00 AM - 9:00 PM',
+  pickup_address text not null default '',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_vendor_shops_vendor on public.vendor_shops(vendor_id);
+
+-- 19.3 VENDOR PRODUCTS & APPROVAL WORKFLOW
+create table if not exists public.vendor_products (
+  id uuid default uuid_generate_v4() primary key,
+  product_code text not null unique,
+  vendor_id uuid references public.vendor_profiles(id) on delete cascade not null,
+  vendor_type text not null check (vendor_type in ('SHOP_OWNER', 'SELLER')),
+  shop_id uuid references public.vendor_shops(id) on delete set null,
+  published_product_id uuid references public.products(id) on delete set null,
+  name text not null,
+  description text default '',
+  category text not null,
+  subcategory text,
+  audience text default 'Unisex',
+  images text[] not null default array[]::text[],
+  video_url text,
+  original_price numeric not null default 0,
+  supplier_price numeric not null default 0,
+  selling_price numeric not null default 0,
+  commission_override_mode text check (commission_override_mode in ('percentage', 'fixed', 'percentage_plus_fixed')),
+  commission_override_rate numeric,
+  commission_override_fixed numeric,
+  total_stock integer not null default 0,
+  sizes text[] default array['S', 'M', 'L', 'XL']::text[],
+  colors text[] default array['Pitch Black']::text[],
+  material text,
+  approval_status text not null default 'pending_approval' check (approval_status in ('draft', 'pending_approval', 'approved', 'rejected', 'out_of_stock', 'disabled')),
+  rejection_reason text,
+  submitted_at timestamp with time zone default timezone('utc'::text, now()),
+  reviewed_at timestamp with time zone,
+  reviewed_by text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_vendor_products_vendor on public.vendor_products(vendor_id);
+create index if not exists idx_vendor_products_status on public.vendor_products(approval_status);
+create index if not exists idx_vendor_products_category on public.vendor_products(category);
+create index if not exists idx_vendor_products_published on public.vendor_products(published_product_id);
+
+-- Connect central products table cleanly without duplication
+alter table public.products add column if not exists vendor_id uuid references public.vendor_profiles(id) on delete set null;
+alter table public.products add column if not exists vendor_type text;
+alter table public.products add column if not exists shop_id uuid references public.vendor_shops(id) on delete set null;
+alter table public.products add column if not exists approval_status text default 'approved';
+create index if not exists idx_products_vendor on public.products(vendor_id);
+create index if not exists idx_products_approval on public.products(approval_status);
+
+-- 19.4 PRODUCT VARIANTS
+create table if not exists public.product_variants (
+  id uuid default uuid_generate_v4() primary key,
+  vendor_product_id uuid references public.vendor_products(id) on delete cascade not null,
+  sku text not null,
+  size text not null default 'Free Size',
+  color text not null default 'Default',
+  color_hex text default '#171717',
+  original_price numeric default 0,
+  supplier_price numeric not null default 0,
+  selling_price numeric not null default 0,
+  stock integer not null default 0,
+  image_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_product_variants_product on public.product_variants(vendor_product_id);
+create index if not exists idx_product_variants_sku on public.product_variants(sku);
+
+-- 19.5 VENDOR INVENTORY LEDGER
+create table if not exists public.vendor_inventory (
+  id uuid default uuid_generate_v4() primary key,
+  vendor_id uuid references public.vendor_profiles(id) on delete cascade not null,
+  vendor_product_id uuid references public.vendor_products(id) on delete cascade not null,
+  variant_id uuid references public.product_variants(id) on delete cascade,
+  sku text not null,
+  available_stock integer not null default 0,
+  reserved_stock integer not null default 0,
+  low_stock_threshold integer not null default 10,
+  last_restocked_at timestamp with time zone default timezone('utc'::text, now()),
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_vendor_inventory_vendor on public.vendor_inventory(vendor_id);
+create index if not exists idx_vendor_inventory_product on public.vendor_inventory(vendor_product_id);
+
+-- 19.6 VENDOR SUBORDERS (Order Distribution Split per Vendor from Parent Order)
+create table if not exists public.vendor_orders (
+  id uuid default uuid_generate_v4() primary key,
+  suborder_code text not null unique, -- e.g. 'SUB-OB-9821-01'
+  parent_order_id uuid references public.orders(id) on delete set null,
+  parent_order_code text not null,
+  vendor_id uuid references public.vendor_profiles(id) on delete restrict not null,
+  vendor_type text not null check (vendor_type in ('SHOP_OWNER', 'SELLER')),
+  shop_id uuid references public.vendor_shops(id) on delete set null,
+  customer_name text not null,
+  customer_phone text not null,
+  delivery_address jsonb not null,
+  pickup_address text not null default '',
+  payment_mode text not null check (payment_mode in ('PREPAID', 'COD')),
+  cod_amount_to_collect numeric default 0,
+  subtotal_selling_price numeric not null default 0,
+  total_supplier_price numeric not null default 0,
+  obrynt_commission numeric not null default 0,
+  applicable_fees numeric not null default 0,
+  vendor_payable_amount numeric not null default 0,
+  stock_confirmed boolean not null default false,
+  status text not null default 'pending_acceptance' check (status in ('pending_acceptance', 'accepted', 'rejected', 'processing', 'ready_for_pickup', 'picked_up', 'in_transit', 'delivered', 'cancelled', 'returned')),
+  rejection_reason text,
+  delivery_assignment_id uuid,
+  tracking_number text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_vendor_orders_vendor on public.vendor_orders(vendor_id);
+create index if not exists idx_vendor_orders_parent on public.vendor_orders(parent_order_code);
+create index if not exists idx_vendor_orders_status on public.vendor_orders(status);
+
+-- 19.7 VENDOR ORDER ITEMS
+create table if not exists public.vendor_order_items (
+  id uuid default uuid_generate_v4() primary key,
+  vendor_order_id uuid references public.vendor_orders(id) on delete cascade not null,
+  vendor_product_id uuid references public.vendor_products(id) on delete set null,
+  variant_id uuid references public.product_variants(id) on delete set null,
+  sku text not null,
+  product_name text not null,
+  size text,
+  color text,
+  quantity integer not null default 1,
+  supplier_price numeric not null default 0,
+  selling_price numeric not null default 0,
+  obrynt_commission numeric not null default 0,
+  applicable_fees numeric not null default 0,
+  vendor_payable numeric not null default 0,
+  image_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_vendor_order_items_order on public.vendor_order_items(vendor_order_id);
+
+-- 19.8 VENDOR COMMISSIONS (Admin-Controlled Rules: Global, Vendor-Specific, Product-Specific)
+create table if not exists public.vendor_commissions (
+  id uuid default uuid_generate_v4() primary key,
+  scope text not null check (scope in ('global', 'vendor', 'product')),
+  vendor_id uuid references public.vendor_profiles(id) on delete cascade,
+  vendor_product_id uuid references public.vendor_products(id) on delete cascade,
+  commission_mode text not null default 'percentage' check (commission_mode in ('percentage', 'fixed', 'percentage_plus_fixed')),
+  percentage_rate numeric not null default 10.00,
+  fixed_amount numeric not null default 0,
+  platform_fee_pct numeric not null default 2.00,
+  is_active boolean not null default true,
+  notes text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_vendor_commissions_scope on public.vendor_commissions(scope, vendor_id, vendor_product_id);
+
+-- 19.9 VENDOR SETTLEMENTS LEDGER (Manual Admin Settlement Only)
+create table if not exists public.vendor_settlements (
+  id uuid default uuid_generate_v4() primary key,
+  settlement_code text not null unique,
+  vendor_id uuid references public.vendor_profiles(id) on delete restrict not null,
+  vendor_order_id uuid references public.vendor_orders(id) on delete cascade not null,
+  suborder_code text not null,
+  gross_selling_amount numeric not null default 0,
+  supplier_agreed_amount numeric not null default 0,
+  obrynt_commission numeric not null default 0,
+  applicable_fees numeric not null default 0,
+  net_vendor_payable numeric not null default 0,
+  settlement_status text not null default 'pending' check (settlement_status in ('pending', 'eligible', 'on_hold', 'settled', 'cancelled')),
+  payment_reference text,
+  settled_at timestamp with time zone,
+  notes text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_vendor_settlements_vendor on public.vendor_settlements(vendor_id);
+create index if not exists idx_vendor_settlements_status on public.vendor_settlements(settlement_status);
+
+-- 19.10 VENDOR ACTIVITY LOGS
+create table if not exists public.vendor_activity_logs (
+  id uuid default uuid_generate_v4() primary key,
+  actor_id text,
+  actor_role text not null,
+  vendor_id uuid references public.vendor_profiles(id) on delete set null,
+  action text not null,
+  entity_type text not null,
+  entity_id text,
+  details jsonb default '{}'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_vendor_logs_vendor on public.vendor_activity_logs(vendor_id);
+create index if not exists idx_vendor_logs_created on public.vendor_activity_logs(created_at desc);
+
+-- =========================================================================
+-- MULTI-VENDOR ROW LEVEL SECURITY (RLS) POLICIES
+-- =========================================================================
+
+alter table public.vendor_profiles enable row level security;
+alter table public.vendor_shops enable row level security;
+alter table public.vendor_products enable row level security;
+alter table public.product_variants enable row level security;
+alter table public.vendor_inventory enable row level security;
+alter table public.vendor_orders enable row level security;
+alter table public.vendor_order_items enable row level security;
+alter table public.vendor_commissions enable row level security;
+alter table public.vendor_settlements enable row level security;
+alter table public.vendor_activity_logs enable row level security;
+
+create or replace function public.is_super_admin()
+returns boolean as $$
+begin
+  return exists (
+    select 1 from public.profiles
+    where id = auth.uid()
+    and role in ('owner', 'admin', 'super_admin')
+  );
+end;
+$$ language plpgsql security definer;
+
+create or replace function public.current_active_vendor_id()
+returns uuid as $$
+begin
+  return (
+    select id from public.vendor_profiles
+    where auth_user_id = auth.uid()
+      and status = 'active'
+    limit 1
+  );
+end;
+$$ language plpgsql security definer;
+
+-- Admin full access + strict vendor self-isolation
+drop policy if exists "Admin manages vendor profiles" on public.vendor_profiles;
+create policy "Admin manages vendor profiles" on public.vendor_profiles for all using (public.is_super_admin());
+drop policy if exists "Vendor reads own profile" on public.vendor_profiles;
+create policy "Vendor reads own profile" on public.vendor_profiles for select using (auth_user_id = auth.uid() and status = 'active');
+
+drop policy if exists "Admin manages vendor shops" on public.vendor_shops;
+create policy "Admin manages vendor shops" on public.vendor_shops for all using (public.is_super_admin());
+drop policy if exists "Vendor manages own shop" on public.vendor_shops;
+create policy "Vendor manages own shop" on public.vendor_shops for all using (vendor_id = public.current_active_vendor_id());
+
+drop policy if exists "Admin manages vendor products" on public.vendor_products;
+create policy "Admin manages vendor products" on public.vendor_products for all using (public.is_super_admin());
+drop policy if exists "Vendor manages own products" on public.vendor_products;
+create policy "Vendor manages own products" on public.vendor_products for all
+  using (vendor_id = public.current_active_vendor_id())
+  with check (vendor_id = public.current_active_vendor_id());
+
+drop policy if exists "Admin manages product variants" on public.product_variants;
+create policy "Admin manages product variants" on public.product_variants for all using (public.is_super_admin());
+drop policy if exists "Vendor manages own variants" on public.product_variants;
+create policy "Vendor manages own variants" on public.product_variants for all
+  using (vendor_product_id in (select id from public.vendor_products where vendor_id = public.current_active_vendor_id()));
+
+drop policy if exists "Admin manages vendor inventory" on public.vendor_inventory;
+create policy "Admin manages vendor inventory" on public.vendor_inventory for all using (public.is_super_admin());
+drop policy if exists "Vendor manages own inventory" on public.vendor_inventory;
+create policy "Vendor manages own inventory" on public.vendor_inventory for all
+  using (vendor_id = public.current_active_vendor_id());
+
+drop policy if exists "Admin manages vendor orders" on public.vendor_orders;
+create policy "Admin manages vendor orders" on public.vendor_orders for all using (public.is_super_admin());
+drop policy if exists "Vendor views and updates own suborders" on public.vendor_orders;
+create policy "Vendor views and updates own suborders" on public.vendor_orders for select
+  using (vendor_id = public.current_active_vendor_id());
+drop policy if exists "Vendor updates status on own suborders" on public.vendor_orders;
+create policy "Vendor updates status on own suborders" on public.vendor_orders for update
+  using (vendor_id = public.current_active_vendor_id());
+
+drop policy if exists "Admin manages vendor order items" on public.vendor_order_items;
+create policy "Admin manages vendor order items" on public.vendor_order_items for all using (public.is_super_admin());
+drop policy if exists "Vendor views own suborder items" on public.vendor_order_items;
+create policy "Vendor views own suborder items" on public.vendor_order_items for select
+  using (vendor_order_id in (select id from public.vendor_orders where vendor_id = public.current_active_vendor_id()));
+
+drop policy if exists "Admin manages commissions" on public.vendor_commissions;
+create policy "Admin manages commissions" on public.vendor_commissions for all using (public.is_super_admin());
+drop policy if exists "Vendor reads own commission rules" on public.vendor_commissions;
+create policy "Vendor reads own commission rules" on public.vendor_commissions for select
+  using (scope = 'global' or vendor_id = public.current_active_vendor_id());
+
+drop policy if exists "Admin manages settlements" on public.vendor_settlements;
+create policy "Admin manages settlements" on public.vendor_settlements for all using (public.is_super_admin());
+drop policy if exists "Vendor reads own settlements" on public.vendor_settlements;
+create policy "Vendor reads own settlements" on public.vendor_settlements for select
+  using (vendor_id = public.current_active_vendor_id());
+
+drop policy if exists "Admin manages vendor logs" on public.vendor_activity_logs;
+create policy "Admin manages vendor logs" on public.vendor_activity_logs for all using (public.is_super_admin());
+drop policy if exists "Vendor reads own logs" on public.vendor_activity_logs;
+create policy "Vendor reads own logs" on public.vendor_activity_logs for select
+  using (vendor_id = public.current_active_vendor_id());
+
+-- Ensure public storefront only sees approved active vendor products
+drop policy if exists "Public can view active products" on public.products;
+create policy "Public can view active products"
+  on public.products for select
+  using (
+    is_published = true
+    and (status is null or status = 'active')
+    and (approval_status is null or approval_status = 'approved')
+  );
+
+-- =========================================================================
+-- 20. THREE-TYPE PARTNER REGISTRATION, APPROVAL & PRIVATE STAFF LOGIN
+-- Extends existing tables cleanly without duplicating partners/products/orders
+-- =========================================================================
+
+-- Expand profiles roles to cover three partner categories and private shop staff roles
+alter table public.profiles drop constraint if exists profiles_role_check;
+alter table public.profiles add constraint profiles_role_check
+  check (role in (
+    'owner', 'admin', 'super_admin',
+    'shop_owner', 'seller',
+    'existing_supplier', 'garment_shop', 'roadside_store',
+    'garment_staff', 'roadside_staff',
+    'delivery_partner', 'delivery', 'staff', 'supplier', 'customer'
+  ));
+
+-- Extend vendor_profiles for Option A (Existing URL) / Option B (New Registration) & Approval Workflow
+alter table public.vendor_profiles alter column email drop not null;
+alter table public.vendor_profiles add column if not exists partner_category text not null default 'GARMENT_SHOP'
+  check (partner_category in ('EXISTING_SUPPLIER', 'GARMENT_SHOP', 'ROADSIDE_STORE'));
+alter table public.vendor_profiles add column if not exists registration_option text not null default 'ADMIN_CREATED'
+  check (registration_option in ('OPTION_A_EXISTING_URL', 'OPTION_B_NEW_PARTNER', 'ADMIN_CREATED'));
+alter table public.vendor_profiles add column if not exists existing_website_url text;
+alter table public.vendor_profiles add column if not exists application_status text not null default 'pending'
+  check (application_status in ('pending', 'approved', 'rejected', 'more_info_requested'));
+alter table public.vendor_profiles add column if not exists rejection_reason text;
+alter table public.vendor_profiles add column if not exists info_request_message text;
+alter table public.vendor_profiles add column if not exists registration_link_id uuid;
+alter table public.vendor_profiles add column if not exists approved_at timestamp with time zone;
+alter table public.vendor_profiles add column if not exists approved_by text;
+
+create index if not exists idx_vendor_profiles_partner_category on public.vendor_profiles(partner_category);
+create index if not exists idx_vendor_profiles_app_status on public.vendor_profiles(application_status);
+create index if not exists idx_vendor_profiles_phone on public.vendor_profiles(phone);
+
+-- 20.1 EXPIRING TOKENIZED PARTNER REGISTRATION LINKS
+create table if not exists public.partner_registration_links (
+  id uuid default uuid_generate_v4() primary key,
+  token_hash text not null unique,
+  partner_category text check (partner_category in ('EXISTING_SUPPLIER', 'GARMENT_SHOP', 'ROADSIDE_STORE', 'ANY')),
+  registration_option text default 'BOTH' check (registration_option in ('OPTION_A_EXISTING_URL', 'OPTION_B_NEW_PARTNER', 'BOTH')),
+  intended_business_name text,
+  created_by text not null,
+  expires_at timestamp with time zone not null,
+  max_uses integer not null default 1,
+  used_count integer not null default 0,
+  status text not null default 'active' check (status in ('active', 'used', 'revoked', 'expired')),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_partner_reg_links_token on public.partner_registration_links(token_hash);
+create index if not exists idx_partner_reg_links_status on public.partner_registration_links(status);
+
+-- 20.2 PRIVATE SHOP STAFF ACCOUNTS (GARMENT_SHOP & ROADSIDE_STORE ONLY — ZERO PUBLIC DIRECTORY)
+create table if not exists public.partner_staff_accounts (
+  id uuid default uuid_generate_v4() primary key,
+  staff_code text not null unique,
+  auth_user_id uuid references auth.users(id) on delete set null,
+  vendor_id uuid references public.vendor_profiles(id) on delete cascade not null,
+  staff_category text not null check (staff_category in ('GARMENT_SHOP', 'ROADSIDE_STORE')),
+  staff_label text not null default 'Store Staff',
+  password_hash text not null,
+  access_token_hash text not null unique,
+  status text not null default 'active' check (status in ('active', 'inactive')),
+  last_login_at timestamp with time zone,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_partner_staff_vendor on public.partner_staff_accounts(vendor_id);
+create index if not exists idx_partner_staff_category on public.partner_staff_accounts(staff_category);
+create index if not exists idx_partner_staff_token on public.partner_staff_accounts(access_token_hash);
+
+-- 20.3 PARTNER & ADMIN APPROVAL NOTIFICATIONS
+create table if not exists public.partner_notifications (
+  id uuid default uuid_generate_v4() primary key,
+  vendor_id uuid references public.vendor_profiles(id) on delete cascade,
+  recipient_role text not null check (recipient_role in ('ADMIN', 'PARTNER')),
+  title text not null,
+  message text not null,
+  action_url text,
+  is_read boolean not null default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index if not exists idx_partner_notifs_role on public.partner_notifications(recipient_role, is_read);
+create index if not exists idx_partner_notifs_vendor on public.partner_notifications(vendor_id);
+
+-- RLS ENFORCEMENT FOR NEW PARTNER REGISTRATION, STAFF & NOTIFICATION TABLES
+alter table public.partner_registration_links enable row level security;
+alter table public.partner_staff_accounts enable row level security;
+alter table public.partner_notifications enable row level security;
+
+create or replace function public.current_active_staff_vendor_id()
+returns uuid as $$
+begin
+  return (
+    select psa.vendor_id
+    from public.partner_staff_accounts psa
+    join public.vendor_profiles vp on vp.id = psa.vendor_id
+    where psa.auth_user_id = auth.uid()
+      and psa.status = 'active'
+      and vp.status = 'active'
+      and vp.application_status = 'approved'
+    limit 1
+  );
+end;
+$$ language plpgsql security definer;
+
+-- Only Super Admin can list/manage registration links (no unauthenticated/public directory)
+drop policy if exists "Admin manages registration links" on public.partner_registration_links;
+create policy "Admin manages registration links"
+  on public.partner_registration_links for all
+  using (public.is_super_admin());
+
+-- Strict zero-directory privacy on staff accounts
+drop policy if exists "Admin manages staff accounts" on public.partner_staff_accounts;
+create policy "Admin manages staff accounts"
+  on public.partner_staff_accounts for all
+  using (public.is_super_admin());
+
+drop policy if exists "Staff reads own account only" on public.partner_staff_accounts;
+create policy "Staff reads own account only"
+  on public.partner_staff_accounts for select
+  using (auth_user_id = auth.uid() and status = 'active');
+
+-- Notifications: Admin views Admin alerts; active Vendor views own notifications
+drop policy if exists "Admin manages partner notifications" on public.partner_notifications;
+create policy "Admin manages partner notifications"
+  on public.partner_notifications for all
+  using (public.is_super_admin());
+
+drop policy if exists "Vendor reads own notifications" on public.partner_notifications;
+create policy "Vendor reads own notifications"
+  on public.partner_notifications for select
+  using (recipient_role = 'PARTNER' and vendor_id = public.current_active_vendor_id());
+
+-- Extend Vendor RLS so unapproved/pending vendors cannot manage products or view orders
+drop policy if exists "Vendor reads own profile" on public.vendor_profiles;
+create policy "Vendor reads own profile"
+  on public.vendor_profiles for select
+  using (auth_user_id = auth.uid() and status = 'active' and application_status = 'approved');
+
+-- Allow active shop staff to access ONLY products and orders assigned to their single shop
+drop policy if exists "Shop staff views assigned shop products" on public.vendor_products;
+create policy "Shop staff views assigned shop products"
+  on public.vendor_products for select
+  using (vendor_id = public.current_active_staff_vendor_id());
+
+drop policy if exists "Shop staff updates stock on assigned shop products" on public.vendor_products;
+create policy "Shop staff updates stock on assigned shop products"
+  on public.vendor_products for update
+  using (vendor_id = public.current_active_staff_vendor_id());
+
+drop policy if exists "Shop staff views assigned shop orders" on public.vendor_orders;
+create policy "Shop staff views assigned shop orders"
+  on public.vendor_orders for select
+  using (vendor_id = public.current_active_staff_vendor_id());
+
+drop policy if exists "Shop staff updates assigned shop orders" on public.vendor_orders;
+create policy "Shop staff updates assigned shop orders"
+  on public.vendor_orders for update
+  using (vendor_id = public.current_active_staff_vendor_id());
+
+
+
 

@@ -21,6 +21,7 @@ export interface AuthSession {
   issuedAt: number;
   expiresAt: number;
   signature: string;
+  serverToken?: string;
 }
 
 export interface StoredCredentials {

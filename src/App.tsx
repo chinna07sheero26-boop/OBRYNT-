@@ -79,7 +79,30 @@ import {
   getFactorySession,
   clearFactorySession,
 } from './services/factoryService';
-import { CompanyAccount, CompanyStaffSession, FactoryPartner, FactorySession } from './types';
+import {
+  FactoryPartner,
+  FactorySession,
+  CompanyAccount,
+  CompanyStaffSession,
+  VendorAuthSession,
+  ShopStaffCategory,
+  ShopStaffSession,
+} from './types';
+import { DukaniDashboard } from './components/DukaniDashboard';
+import { SellerDashboard } from './components/SellerDashboard';
+import { ExistingSupplierDashboard } from './components/ExistingSupplierDashboard';
+import { RoadsideStoreDashboard } from './components/RoadsideStoreDashboard';
+import { VendorLoginModal } from './components/VendorLoginModal';
+import { PartnerOnboardingModal } from './components/PartnerOnboardingModal';
+import { PrivateShopStaffLoginModal } from './components/PrivateShopStaffLoginModal';
+import { ShopStaffDashboard } from './components/ShopStaffDashboard';
+import {
+  getVendorSession,
+  clearVendorSession,
+  getShopStaffSession,
+  clearShopStaffSession,
+  distributeOrderToVendors,
+} from './services/vendorService';
 import { Newsletter } from './components/Newsletter';
 import { Footer } from './components/Footer';
 import { ObryntWatermark, ObryntBrandMaterialsModal } from './components/ObryntBrand';
@@ -104,13 +127,20 @@ export default function App() {
       const isSpecialPortal =
         path.startsWith('/admin') ||
         path.startsWith('/staff') ||
+        path.startsWith('/vendor') ||
+        path.startsWith('/dukani') ||
+        path.startsWith('/seller') ||
+        path.startsWith('/partner') ||
         search.includes('owner=') ||
         search.includes('staff=') ||
         search.includes('delivery=') ||
         search.includes('factory=') ||
+        search.includes('vendor=') ||
+        search.includes('token=obreg_') ||
         hash === '#admin' ||
         hash === '#owner' ||
-        hash === '#staff';
+        hash === '#staff' ||
+        hash === '#vendor';
       if (isSpecialPortal) return false;
       return sessionStorage.getItem(INTRO_SESSION_STORAGE_KEY) !== '1';
     } catch {
@@ -155,6 +185,28 @@ export default function App() {
   const [isFactoryModalOpen, setIsFactoryModalOpen] = useState<boolean>(false);
   const [factoryModalToken, setFactoryModalToken] = useState<string>('');
 
+  // Dukani, Existing Supplier, Garment Shop, Roadside Store & Seller Portal State
+  const [vendorSession, setVendorSession] = useState<VendorAuthSession | null>(() => getVendorSession());
+  const [isVendorDashboardOpen, setIsVendorDashboardOpen] = useState<boolean>(() =>
+    Boolean(getVendorSession())
+  );
+  const [isVendorLoginOpen, setIsVendorLoginOpen] = useState<boolean>(false);
+
+  // Partner Onboarding Modal (/partner-register?token=...)
+  const [isPartnerOnboardingOpen, setIsPartnerOnboardingOpen] = useState<boolean>(false);
+  const [partnerOnboardingToken, setPartnerOnboardingToken] = useState<string>('');
+
+  // Private Shop Staff Login & Dashboard (/staff/garment & /staff/roadside)
+  const [shopStaffSession, setShopStaffSession] = useState<ShopStaffSession | null>(() =>
+    getShopStaffSession()
+  );
+  const [isShopStaffDashboardOpen, setIsShopStaffDashboardOpen] = useState<boolean>(() =>
+    Boolean(getShopStaffSession())
+  );
+  const [isShopStaffLoginOpen, setIsShopStaffLoginOpen] = useState<boolean>(false);
+  const [shopStaffCategory, setShopStaffCategory] = useState<ShopStaffCategory>('GARMENT_SHOP');
+  const [shopStaffAccessToken, setShopStaffAccessToken] = useState<string>('');
+
   // Filter State
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [activeAudience, setActiveAudience] = useState<string>('All');
@@ -194,6 +246,15 @@ export default function App() {
   const [accountTab, setAccountTab] = useState<'orders' | 'transactions' | 'wishlist' | 'designs'>('orders');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isBrandMaterialsOpen, setIsBrandMaterialsOpen] = useState<boolean>(false);
+
+  const refreshUnifiedCatalog = async () => {
+    try {
+      const res = await loadUnifiedProductCatalogue();
+      setProducts(res.products);
+    } catch (err) {
+      console.error('Failed to refresh unified catalogue:', err);
+    }
+  };
 
   // Load products on mount (Supabase + local cache + defaults)
   useEffect(() => {
@@ -285,8 +346,26 @@ export default function App() {
           }
         }
 
-        // 2. Check Company Staff Route
-        if (isStaffRequested) {
+        // 2. Check Private Shop Staff (/staff/garment & /staff/roadside) OR Company Staff Route
+        const isGarmentStaffPath = pathname.startsWith('/staff/garment');
+        const isRoadsideStaffPath = pathname.startsWith('/staff/roadside');
+
+        if (isGarmentStaffPath || isRoadsideStaffPath) {
+          const urlParams = new URLSearchParams(search);
+          const accessParam = urlParams.get('access') || '';
+          const cat: ShopStaffCategory = isRoadsideStaffPath ? 'ROADSIDE_STORE' : 'GARMENT_SHOP';
+          const curShopStaff = getShopStaffSession();
+          if (curShopStaff && curShopStaff.staffCategory === cat && !accessParam) {
+            if (isMounted) {
+              setShopStaffSession(curShopStaff);
+              setIsShopStaffDashboardOpen(true);
+            }
+          } else if (isMounted) {
+            setShopStaffCategory(cat);
+            setShopStaffAccessToken(accessParam);
+            setIsShopStaffLoginOpen(true);
+          }
+        } else if (isStaffRequested) {
           const curCompanySession = getCompanyStaffSession();
           if (curCompanySession) {
             if (isMounted) {
@@ -349,6 +428,49 @@ export default function App() {
           } else {
             if (isMounted) {
               setIsFactoryModalOpen(true);
+            }
+          }
+        }
+
+        // 5. Check Partner Registration Route (/partner-register?token=obreg_...)
+        const isPartnerRegisterRequested =
+          pathname === '/partner-register' ||
+          pathname.startsWith('/partner-register') ||
+          search.includes('token=obreg_');
+
+        if (isPartnerRegisterRequested) {
+          const urlParams = new URLSearchParams(search);
+          const regToken = urlParams.get('token') || '';
+          if (isMounted) {
+            setPartnerOnboardingToken(regToken);
+            setIsPartnerOnboardingOpen(true);
+          }
+        }
+
+        // 6. Check Partner Portal Route (/vendor, /dukani, /seller, /partner)
+        const isVendorRequested =
+          !isPartnerRegisterRequested &&
+          (pathname === '/vendor' ||
+            pathname.startsWith('/vendor') ||
+            pathname === '/dukani' ||
+            pathname.startsWith('/dukani') ||
+            pathname === '/seller' ||
+            pathname.startsWith('/seller') ||
+            pathname === '/partner' ||
+            pathname.startsWith('/partner') ||
+            search.includes('vendor=true') ||
+            hash === '#vendor');
+
+        if (isVendorRequested) {
+          const curVendor = getVendorSession();
+          if (curVendor) {
+            if (isMounted) {
+              setVendorSession(curVendor);
+              setIsVendorDashboardOpen(true);
+            }
+          } else {
+            if (isMounted) {
+              setIsVendorLoginOpen(true);
             }
           }
         }
@@ -567,6 +689,64 @@ export default function App() {
     }
   };
 
+  // Dukani / Seller Portal Handlers
+  const handleVendorLoginSuccess = (session: VendorAuthSession) => {
+    setVendorSession(session);
+    setIsVendorDashboardOpen(true);
+  };
+
+  const handleLogoutVendor = () => {
+    clearVendorSession();
+    setVendorSession(null);
+    setIsVendorDashboardOpen(false);
+    try {
+      const p = window.location.pathname;
+      if (p.startsWith('/vendor') || p.startsWith('/dukani') || p.startsWith('/seller') || window.location.hash.includes('vendor')) {
+        window.history.replaceState({}, '', '/');
+      }
+    } catch {}
+    showNotice('Signed out of Partner Console.');
+  };
+
+  const handleTriggerVendorAccess = () => {
+    const cur = getVendorSession();
+    if (cur) {
+      setVendorSession(cur);
+      setIsVendorDashboardOpen(true);
+    } else {
+      setIsVendorLoginOpen(true);
+    }
+  };
+
+  const handleOpenShopStaffGateway = (cat: ShopStaffCategory) => {
+    const cur = getShopStaffSession();
+    if (cur && cur.staffCategory === cat) {
+      setShopStaffSession(cur);
+      setIsShopStaffDashboardOpen(true);
+      return;
+    }
+    setShopStaffCategory(cat);
+    setShopStaffAccessToken('');
+    setIsShopStaffLoginOpen(true);
+  };
+
+  const handleShopStaffLoginSuccess = (session: ShopStaffSession) => {
+    setShopStaffSession(session);
+    setIsShopStaffDashboardOpen(true);
+  };
+
+  const handleLogoutShopStaff = () => {
+    clearShopStaffSession();
+    setShopStaffSession(null);
+    setIsShopStaffDashboardOpen(false);
+    try {
+      if (window.location.pathname.startsWith('/staff/garment') || window.location.pathname.startsWith('/staff/roadside')) {
+        window.history.replaceState({}, '', '/');
+      }
+    } catch {}
+    showNotice('Signed out of shop staff workstation.');
+  };
+
   // Owner Operations
   const handleUpdateProducts = (newProducts: Product[]) => {
     setProducts(newProducts);
@@ -711,6 +891,8 @@ export default function App() {
     const updatedOrders = saveOrderToStorage(order);
     setOrders(updatedOrders);
     setTransactions(getStoredTransactions());
+    // Split multi-vendor items into isolated Dukani / Seller suborders automatically
+    distributeOrderToVendors(order).catch(() => {});
   };
 
   // Filter & Search Logic
@@ -836,6 +1018,7 @@ export default function App() {
         onOpenDeliveryPortal={handleTriggerDeliveryAccess}
         onOpenCompanyPortal={handleOpenCompanyPortal}
         onOpenFactoryPortal={handleLaunchFactoryPortal}
+        onRefreshCatalog={refreshUnifiedCatalog}
       />
     );
   }
@@ -885,6 +1068,59 @@ export default function App() {
         onLogout={handleLogoutDelivery}
         onShowNotice={showNotice}
         onBackToStorefront={() => setIsDeliveryPortalOpen(false)}
+      />
+    );
+  }
+
+  // If Private Garment or Roadside Shop Staff session is active, show strictly isolated Shop Staff Console
+  if (isShopStaffDashboardOpen && shopStaffSession) {
+    return (
+      <ShopStaffDashboard
+        session={shopStaffSession}
+        onLogout={handleLogoutShopStaff}
+        onShowNotice={showNotice}
+      />
+    );
+  }
+
+  // If a Partner session is active, render their strictly isolated category dashboard
+  if (isVendorDashboardOpen && vendorSession) {
+    if (vendorSession.partnerCategory === 'EXISTING_SUPPLIER') {
+      return (
+        <ExistingSupplierDashboard
+          session={vendorSession}
+          onLogout={handleLogoutVendor}
+          onBackToStorefront={() => setIsVendorDashboardOpen(false)}
+          onShowNotice={showNotice}
+        />
+      );
+    }
+    if (vendorSession.partnerCategory === 'ROADSIDE_STORE') {
+      return (
+        <RoadsideStoreDashboard
+          session={vendorSession}
+          onLogout={handleLogoutVendor}
+          onBackToStorefront={() => setIsVendorDashboardOpen(false)}
+          onShowNotice={showNotice}
+        />
+      );
+    }
+    if (vendorSession.partnerCategory === 'GARMENT_SHOP' || vendorSession.accountType === 'SHOP_OWNER') {
+      return (
+        <DukaniDashboard
+          session={vendorSession}
+          onLogout={handleLogoutVendor}
+          onBackToStorefront={() => setIsVendorDashboardOpen(false)}
+          onShowNotice={showNotice}
+        />
+      );
+    }
+    return (
+      <SellerDashboard
+        session={vendorSession}
+        onLogout={handleLogoutVendor}
+        onBackToStorefront={() => setIsVendorDashboardOpen(false)}
+        onShowNotice={showNotice}
       />
     );
   }
@@ -1288,6 +1524,14 @@ export default function App() {
         onOpenStaffLogin={handleTriggerStaffAccess}
         isDeliveryAuth={Boolean(deliverySession)}
         onOpenDeliveryLogin={() => handleTriggerDeliveryAccess()}
+        isVendorAuth={Boolean(vendorSession)}
+        onOpenVendorLogin={handleTriggerVendorAccess}
+        onOpenPartnerOnboarding={() => {
+          setPartnerOnboardingToken('');
+          setIsPartnerOnboardingOpen(true);
+        }}
+        onOpenGarmentStaffLogin={() => handleOpenShopStaffGateway('GARMENT_SHOP')}
+        onOpenRoadsideStaffLogin={() => handleOpenShopStaffGateway('ROADSIDE_STORE')}
         onOpenBrandAssets={() => setIsBrandMaterialsOpen(true)}
       />
 
@@ -1413,6 +1657,38 @@ export default function App() {
       <ObryntBrandMaterialsModal
         isOpen={isBrandMaterialsOpen}
         onClose={() => setIsBrandMaterialsOpen(false)}
+        onShowNotice={showNotice}
+      />
+
+      {/* Partner Login Modal */}
+      <VendorLoginModal
+        isOpen={isVendorLoginOpen}
+        onClose={() => setIsVendorLoginOpen(false)}
+        onSuccess={handleVendorLoginSuccess}
+        onShowNotice={showNotice}
+        onOpenPartnerOnboarding={() => {
+          setPartnerOnboardingToken('');
+          setIsPartnerOnboardingOpen(true);
+        }}
+        onOpenShopStaffLogin={(cat) => handleOpenShopStaffGateway(cat)}
+      />
+
+      {/* Three-Category Partner Onboarding (Option A / Option B) */}
+      <PartnerOnboardingModal
+        isOpen={isPartnerOnboardingOpen}
+        initialToken={partnerOnboardingToken}
+        onClose={() => setIsPartnerOnboardingOpen(false)}
+        onOpenLogin={() => setIsVendorLoginOpen(true)}
+        onShowNotice={showNotice}
+      />
+
+      {/* Private Garment & Roadside Store Staff Password-Only Gateway */}
+      <PrivateShopStaffLoginModal
+        isOpen={isShopStaffLoginOpen}
+        staffCategory={shopStaffCategory}
+        accessToken={shopStaffAccessToken}
+        onClose={() => setIsShopStaffLoginOpen(false)}
+        onSuccess={handleShopStaffLoginSuccess}
         onShowNotice={showNotice}
       />
     </div>

@@ -31,6 +31,11 @@ import {
   formatCompleteDeliveryDetails,
   clearDeliverySession,
 } from '../services/deliveryService';
+import {
+  fetchDeliveryVendorPickups,
+  updateDeliveryVendorPickupStatus,
+  SanitizedDeliveryVendorPickup,
+} from '../services/vendorService';
 
 interface DeliveryDashboardProps {
   session: DeliverySession;
@@ -51,6 +56,8 @@ export const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({
   );
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'new' | 'prepaid' | 'cod' | 'completed'>('all');
+  const [deliveryView, setDeliveryView] = useState<'courier' | 'vendor_pickups'>('courier');
+  const [vendorPickups, setVendorPickups] = useState<SanitizedDeliveryVendorPickup[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Track recent copied item IDs for feedback
@@ -59,8 +66,10 @@ export const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({
   // Tracking numbers draft state
   const [trackingInputs, setTrackingInputs] = useState<Record<string, string>>({});
 
-  const refreshAssignments = () => {
+  const refreshAssignments = async () => {
     setAssignments(getDeliveryAssignments(session.companyId));
+    const pickups = await fetchDeliveryVendorPickups();
+    setVendorPickups(pickups);
   };
 
   useEffect(() => {
@@ -227,10 +236,172 @@ export const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({
           <div className="flex items-center gap-3 shrink-0 text-xs text-stone-400 font-mono">
             <span>Orders Assigned: <strong className="text-white">{metrics.total}</strong></span>
             <span>·</span>
-            <span>Pending Dispatch: <strong className="text-[#d7ff3f]">{metrics.newAssignments}</strong></span>
+            <span>Dukani/Seller Pickups: <strong className="text-[#d7ff3f]">{vendorPickups.length}</strong></span>
           </div>
         </div>
 
+        {/* View Switcher: Assigned Courier Shipments vs Dukani & Seller Vendor Pickups */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-stone-800 pb-3">
+          <button
+            onClick={() => setDeliveryView('courier')}
+            className={`px-4 py-2 rounded-xl text-xs font-black cursor-pointer transition-colors ${
+              deliveryView === 'courier'
+                ? 'bg-[#d7ff3f] text-[#111111]'
+                : 'bg-[#181818] text-stone-300 border border-stone-800 hover:text-white'
+            }`}
+          >
+            Assigned Courier Shipments ({metrics.total})
+          </button>
+          <button
+            onClick={() => setDeliveryView('vendor_pickups')}
+            className={`px-4 py-2 rounded-xl text-xs font-black cursor-pointer transition-colors ${
+              deliveryView === 'vendor_pickups'
+                ? 'bg-[#d7ff3f] text-[#111111]'
+                : 'bg-[#181818] text-stone-300 border border-stone-800 hover:text-white'
+            }`}
+          >
+            Dukani & Seller Shop Pickups ({vendorPickups.length})
+          </button>
+        </div>
+
+        {deliveryView === 'vendor_pickups' && (
+          <div className="space-y-4">
+            {vendorPickups.length === 0 ? (
+              <div className="text-center py-16 bg-[#141414] rounded-3xl border border-stone-800 p-8">
+                <Package className="w-10 h-10 text-stone-600 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-white">No Ready Shop/Seller Pickups</h3>
+                <p className="text-xs text-stone-400 mt-1">
+                  Parcels appear here automatically as soon as a Dukani Shop Owner or Seller marks an order Ready for Pickup.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {vendorPickups.map((p) => (
+                  <div
+                    key={p.suborderId}
+                    className="bg-[#141414] border border-stone-800 rounded-3xl p-5 sm:p-6 space-y-4 text-xs"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-stone-800">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-sm text-[#d7ff3f] bg-black px-2.5 py-1 rounded-lg border border-stone-800">
+                          {p.suborderCode}
+                        </span>
+                        <span className="text-stone-400">Parent Order: {p.parentOrderCode}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-3 py-1 rounded-full font-black uppercase text-[10px] ${
+                            p.isCod
+                              ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                              : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                          }`}
+                        >
+                          {p.isCod ? `COD COLLECT ₹${p.codAmountToCollect}` : 'PREPAID · ₹0 COLLECT'}
+                        </span>
+                        <span className="px-2.5 py-1 rounded-full bg-stone-900 border border-stone-700 font-black uppercase text-[10px] text-white">
+                          {p.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-stone-800">
+                        <span className="text-[10px] font-black uppercase text-stone-400 block mb-1">
+                          Pickup Shop / Seller Address
+                        </span>
+                        <strong className="text-white block">{p.pickupVendorName}</strong>
+                        <p className="text-stone-300 mt-1">{p.pickupShopAddress}</p>
+                      </div>
+
+                      <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-stone-800">
+                        <span className="text-[10px] font-black uppercase text-stone-400 block mb-1">
+                          Customer & Delivery Address
+                        </span>
+                        <strong className="text-white block">
+                          {p.customerName} · {p.customerPhone}
+                        </strong>
+                        <p className="text-stone-300 mt-1">
+                          {p.deliveryAddress.address}, {p.deliveryAddress.city}, {p.deliveryAddress.state} -{' '}
+                          {p.deliveryAddress.pincode}
+                        </p>
+                      </div>
+
+                      <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-stone-800">
+                        <span className="text-[10px] font-black uppercase text-stone-400 block mb-1">
+                          Package Contents (Financials Hidden)
+                        </span>
+                        <p className="text-stone-200">{p.packageDetails}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-stone-800">
+                      <input
+                        type="text"
+                        placeholder="AWB / Tracking #"
+                        value={trackingInputs[p.suborderId] ?? p.trackingNumber ?? ''}
+                        onChange={(e) =>
+                          setTrackingInputs({ ...trackingInputs, [p.suborderId]: e.target.value })
+                        }
+                        className="bg-[#1a1a1a] border border-stone-800 rounded-xl px-3 py-2 text-xs text-white w-48"
+                      />
+                      {p.status === 'ready_for_pickup' && (
+                        <button
+                          onClick={async () => {
+                            await updateDeliveryVendorPickupStatus(
+                              p.suborderId,
+                              'picked_up',
+                              trackingInputs[p.suborderId]
+                            );
+                            onShowNotice(`Marked ${p.suborderCode} PICKED UP from vendor.`);
+                            await refreshAssignments();
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-amber-950 text-amber-200 border border-amber-800 font-bold cursor-pointer"
+                        >
+                          Mark Picked Up
+                        </button>
+                      )}
+                      {(p.status === 'ready_for_pickup' || p.status === 'picked_up') && (
+                        <button
+                          onClick={async () => {
+                            await updateDeliveryVendorPickupStatus(
+                              p.suborderId,
+                              'in_transit',
+                              trackingInputs[p.suborderId]
+                            );
+                            onShowNotice(`Marked ${p.suborderCode} IN TRANSIT.`);
+                            await refreshAssignments();
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-blue-950 text-blue-200 border border-blue-800 font-bold cursor-pointer"
+                        >
+                          Mark In Transit
+                        </button>
+                      )}
+                      {p.status !== 'delivered' && (
+                        <button
+                          onClick={async () => {
+                            await updateDeliveryVendorPickupStatus(
+                              p.suborderId,
+                              'delivered',
+                              trackingInputs[p.suborderId]
+                            );
+                            onShowNotice(`Marked ${p.suborderCode} DELIVERED.`);
+                            await refreshAssignments();
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-emerald-950 text-emerald-200 border border-emerald-800 font-black cursor-pointer"
+                        >
+                          Mark Delivered
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {deliveryView === 'courier' && (
+          <>
         {/* Filter & Search Bar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
           {/* Filter Pills */}
@@ -585,6 +756,8 @@ export const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({
               );
             })}
           </div>
+        )}
+          </>
         )}
       </main>
 

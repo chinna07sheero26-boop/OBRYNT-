@@ -124,6 +124,14 @@ export interface Product {
   supplierPrice?: number; // Original supplier catalogue price (e.g. ₹269)
   wholesalePrice?: number; // Synced alias for supplier cost in DB
   markupAmount?: number; // Mandatory OBRYNT markup (default ₹40)
+  vendorId?: string;
+  vendorCode?: string;
+  vendorName?: string;
+  vendorType?: 'SHOP_OWNER' | 'SELLER';
+  shopId?: string;
+  shopName?: string;
+  videoUrl?: string;
+  approvalStatus?: 'draft' | 'pending_approval' | 'approved' | 'rejected' | 'out_of_stock' | 'disabled';
   confidence?: number;
   needsReview?: boolean;
   supplierProductId?: string;
@@ -421,6 +429,7 @@ export interface DeliveryCompany {
 
 export interface DeliveryOrderSnapshot {
   orderId: string;
+  suborderCode?: string;
   date: string;
   customerName: string;
   customerPhone: string;
@@ -428,6 +437,9 @@ export interface DeliveryOrderSnapshot {
   city: string;
   state: string;
   pincode: string;
+  pickupShopAddress?: string;
+  pickupVendorName?: string;
+  packageDetails?: string;
   isCod: boolean;
   paymentMethodType: 'PREPAID' | 'CASH ON DELIVERY';
   // Strict Privacy: populated ONLY if isCod === true
@@ -642,6 +654,379 @@ export interface MultiStoreBatchResponse {
   totalDiscovered: number;
   totalDuplicatesSkipped: number;
 }
+
+// =========================================================================
+// OBRYNT DUKANI (SHOP OWNER) & SELLER MULTI-VENDOR MARKETPLACE TYPES
+// =========================================================================
+
+export type PlatformRole =
+  | 'SUPER_ADMIN'
+  | 'SHOP_OWNER'
+  | 'SELLER'
+  | 'DELIVERY_PARTNER'
+  | 'CUSTOMER';
+
+export type VendorAccountType = 'SHOP_OWNER' | 'SELLER';
+
+export type VendorAccountStatus = 'active' | 'inactive' | 'suspended' | 'blocked';
+
+export type VendorProductApprovalStatus =
+  | 'draft'
+  | 'pending_approval'
+  | 'approved'
+  | 'rejected'
+  | 'out_of_stock'
+  | 'disabled';
+
+export type CommissionMode = 'percentage' | 'fixed' | 'percentage_plus_fixed';
+
+export type VendorSubOrderStatus =
+  | 'pending_acceptance'
+  | 'accepted'
+  | 'rejected'
+  | 'processing'
+  | 'ready_for_pickup'
+  | 'picked_up'
+  | 'in_transit'
+  | 'delivered'
+  | 'cancelled'
+  | 'returned';
+
+export interface VendorShopProfile {
+  id: string;
+  vendorId: string;
+  shopName: string;
+  ownerName: string;
+  shopAddress: string;
+  city: string;
+  state: string;
+  pincode: string;
+  contactNumber: string;
+  shopPhotos: string[];
+  gstNumber?: string;
+  openingHours: string;
+  pickupAddress: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorBankDetails {
+  accountHolderName?: string;
+  accountNumberMasked?: string; // e.g. '••••••4821' (full account never returned to UI after save)
+  ifscCode?: string;
+  upiId?: string;
+}
+
+export type PartnerCategory = 'EXISTING_SUPPLIER' | 'GARMENT_SHOP' | 'ROADSIDE_STORE';
+
+export type RegistrationOption = 'OPTION_A_EXISTING_URL' | 'OPTION_B_NEW_PARTNER' | 'ADMIN_CREATED';
+
+export type PartnerApplicationStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'more_info_requested';
+
+export type ShopStaffCategory = 'GARMENT_SHOP' | 'ROADSIDE_STORE';
+
+export interface VendorProfile {
+  id: string;
+  vendorCode: string; // e.g. 'SUP-1001', 'GAR-1001', 'RDS-1001', 'DUK-1001', 'SEL-1001'
+  accountType: VendorAccountType;
+  partnerCategory: PartnerCategory;
+  registrationOption: RegistrationOption;
+  applicationStatus: PartnerApplicationStatus;
+  existingWebsiteUrl?: string;
+  rejectionReason?: string;
+  infoRequestMessage?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  secureLoginLink?: string;
+  fullName: string;
+  businessName: string;
+  email: string;
+  phone: string;
+  status: VendorAccountStatus;
+  gstNumber?: string;
+  bankDetails?: VendorBankDetails;
+  commissionMode: CommissionMode;
+  commissionRate: number; // %
+  fixedCommission: number; // ₹
+  platformFeePct: number; // %
+  pickupAddress: string;
+  notes?: string;
+  createdBy: string;
+  lastLoginAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  shopProfile?: VendorShopProfile;
+  // Computed stats when requested by Admin
+  stats?: {
+    totalProducts: number;
+    approvedProducts: number;
+    pendingProducts: number;
+    totalStockUnits: number;
+    totalOrders: number;
+    totalSales: number;
+    totalCommission: number;
+    totalPayable: number;
+  };
+}
+
+export interface VendorProductVariant {
+  id: string;
+  vendorProductId: string;
+  sku: string;
+  size: string;
+  color: string;
+  colorHex?: string;
+  originalPrice: number;
+  supplierPrice: number;
+  sellingPrice: number;
+  stock: number;
+  imageUrl?: string;
+}
+
+export interface VendorProduct {
+  id: string;
+  productCode: string; // Unique SKU / Product ID
+  vendorId: string;
+  vendorCode: string;
+  vendorName: string;
+  vendorType: VendorAccountType;
+  shopId?: string;
+  shopName?: string;
+  publishedProductSku?: string;
+  name: string;
+  description: string;
+  category: string;
+  subcategory?: string;
+  audience: string;
+  images: string[];
+  videoUrl?: string;
+  originalPrice: number;
+  supplierPrice: number;
+  sellingPrice: number;
+  commissionOverrideMode?: CommissionMode;
+  commissionOverrideRate?: number;
+  commissionOverrideFixed?: number;
+  totalStock: number;
+  sizes: string[];
+  colors: string[];
+  variants: VendorProductVariant[];
+  material?: string;
+  approvalStatus: VendorProductApprovalStatus;
+  rejectionReason?: string;
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorInventoryRecord {
+  id: string;
+  vendorId: string;
+  vendorProductId: string;
+  variantId?: string;
+  sku: string;
+  availableStock: number;
+  reservedStock: number;
+  lowStockThreshold: number;
+  lastRestockedAt: string;
+  updatedAt: string;
+}
+
+export interface VendorSubOrderItem {
+  id: string;
+  vendorOrderId: string;
+  vendorProductId?: string;
+  variantId?: string;
+  sku: string;
+  productName: string;
+  size: string;
+  color: string;
+  quantity: number;
+  supplierPrice: number;
+  sellingPrice: number;
+  obryntCommission: number;
+  applicableFees: number;
+  vendorPayable: number;
+  imageUrl?: string;
+}
+
+export interface VendorSubOrder {
+  id: string;
+  suborderCode: string;
+  parentOrderCode: string;
+  vendorId: string;
+  vendorCode: string;
+  vendorName: string;
+  vendorType: VendorAccountType;
+  shopId?: string;
+  shopName?: string;
+  customerName: string;
+  customerPhone: string;
+  deliveryAddress: {
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+  };
+  pickupAddress: string;
+  paymentMode: 'PREPAID' | 'COD';
+  codAmountToCollect: number;
+  subtotalSellingPrice: number;
+  totalSupplierPrice: number;
+  obryntCommission: number;
+  applicableFees: number;
+  vendorPayableAmount: number;
+  stockConfirmed: boolean;
+  status: VendorSubOrderStatus;
+  rejectionReason?: string;
+  trackingNumber?: string;
+  deliveryAssignmentId?: string;
+  items: VendorSubOrderItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorCommissionRule {
+  id: string;
+  scope: 'global' | 'vendor' | 'product';
+  vendorId?: string;
+  vendorName?: string;
+  vendorProductId?: string;
+  productName?: string;
+  commissionMode: CommissionMode;
+  percentageRate: number;
+  fixedAmount: number;
+  platformFeePct: number;
+  isActive: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorSettlement {
+  id: string;
+  settlementCode: string;
+  vendorId: string;
+  vendorCode: string;
+  vendorName: string;
+  vendorType: VendorAccountType;
+  vendorOrderId: string;
+  suborderCode: string;
+  parentOrderCode: string;
+  grossSellingAmount: number;
+  supplierAgreedAmount: number;
+  obryntCommission: number;
+  applicableFees: number;
+  netVendorPayable: number;
+  settlementStatus: 'pending' | 'eligible' | 'on_hold' | 'settled' | 'cancelled';
+  paymentReference?: string;
+  settledAt?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorActivityLog {
+  id: string;
+  actorId: string;
+  actorRole: PlatformRole | string;
+  vendorId?: string;
+  vendorCode?: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  details: string;
+  createdAt: string;
+}
+
+export interface VendorAuthSession {
+  vendorId: string;
+  vendorCode: string;
+  accountType: VendorAccountType;
+  partnerCategory: PartnerCategory;
+  existingWebsiteUrl?: string;
+  role: 'SHOP_OWNER' | 'SELLER';
+  fullName: string;
+  businessName: string;
+  email: string;
+  token: string;
+  expiresAt: number;
+  authenticatedAt: string;
+}
+
+export interface PartnerRegistrationLink {
+  id: string;
+  partnerCategory: PartnerCategory | 'ANY';
+  registrationOption: RegistrationOption | 'BOTH';
+  intendedBusinessName?: string;
+  createdBy: string;
+  expiresAt: string;
+  maxUses: number;
+  usedCount: number;
+  status: 'active' | 'used' | 'revoked' | 'expired';
+  createdAt: string;
+}
+
+export interface PartnerStaffAccount {
+  id: string;
+  staffCode: string;
+  vendorId: string;
+  vendorCode: string;
+  shopName: string;
+  staffCategory: ShopStaffCategory;
+  staffLabel: string;
+  status: 'active' | 'inactive';
+  lastLoginAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShopStaffSession {
+  staffId: string;
+  staffCode: string;
+  staffCategory: ShopStaffCategory;
+  vendorId: string;
+  role: 'GARMENT_STAFF' | 'ROADSIDE_STAFF';
+  staffLabel: string;
+  shopName: string;
+  token: string;
+  expiresAt: number;
+  authenticatedAt: string;
+}
+
+export interface PartnerNotification {
+  id: string;
+  vendorId?: string;
+  recipientRole: 'ADMIN' | 'PARTNER';
+  title: string;
+  message: string;
+  actionUrl?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface PartnersAdminOverviewCounts {
+  totalRegistrations: number;
+  existingSuppliers: number;
+  garmentShops: number;
+  roadsideStores: number;
+  pendingApplications: number;
+  moreInfoRequested: number;
+  approvedPartners: number;
+  activePartners: number;
+  rejectedApplications: number;
+  suspendedAccounts: number;
+  staffAccountsCount: number;
+  activeStaffCount: number;
+  unreadNotificationsCount: number;
+}
+
+
 
 
 

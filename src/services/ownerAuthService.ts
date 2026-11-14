@@ -116,6 +116,7 @@ export async function validateOwnerServerCredentials(
         issuedAt: sessionData.issuedAt || Date.now(),
         expiresAt: sessionData.expiresAt || Date.now() + 8 * 60 * 60 * 1000,
         signature: sessionData.signature || 'server_verified',
+        serverToken: data.token || undefined,
       };
 
       saveActiveSession(session);
